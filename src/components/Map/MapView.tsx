@@ -3,56 +3,28 @@
  *
  * This component provides a MapLibre-based map view centered on Denver, Colorado
  * by default, with automatic centering on the user's location once permissions
- * are granted. Uses OpenStreetMap raster tiles for the base map.
+ * are granted. Uses Carto vector tiles for the base map.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Alert, Platform } from 'react-native';
-import { MapView as MLMapView, Camera, UserLocation } from '@maplibre/maplibre-react-native';
-import * as ExpoLocation from 'expo-location';
 import {
-  DEFAULT_MAP_CENTER,
-  DEFAULT_ZOOM_LEVEL,
-  MIN_ZOOM,
-  MAX_ZOOM,
-  OSM_TILE_URLS,
-} from '@/constants';
+  MapView as MLMapView,
+  Camera,
+  UserLocation,
+  RasterSource,
+  RasterLayer,
+} from '@maplibre/maplibre-react-native';
+import * as ExpoLocation from 'expo-location';
+import { DEFAULT_MAP_CENTER, DEFAULT_ZOOM_LEVEL, MIN_ZOOM, MAX_ZOOM, MAP_STYLE_URL } from '@/constants';
 import { LocationPermissionStatus } from './MapView.types';
 import type { MapViewProps, UserLocation as UserLocationData } from './MapView.types';
-
-/**
- * MapLibre style specification for OpenStreetMap raster tiles.
- * This style configuration defines the map's visual appearance and tile sources.
- * Uses multiple tile server subdomains for better load distribution.
- */
-const MAP_STYLE_JSON = {
-  version: 8,
-  name: 'OpenStreetMap',
-  sources: {
-    osm: {
-      type: 'raster',
-      tiles: OSM_TILE_URLS,
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors',
-      maxzoom: 19,
-    },
-  },
-  layers: [
-    {
-      id: 'osm-tiles',
-      type: 'raster',
-      source: 'osm',
-      minzoom: 0,
-      maxzoom: 19,
-    },
-  ],
-};
 
 /**
  * Full-screen map component with user location tracking.
  *
  * Features:
- * - Displays OpenStreetMap tiles via MapLibre
+ * - Displays Carto vector tiles via MapLibre
  * - Centers on Denver, CO by default
  * - Requests location permissions on mount
  * - Automatically centers on user location when granted
@@ -68,7 +40,7 @@ export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError 
   );
   const [userLocation, setUserLocation] = useState<UserLocationData | null>(null);
   const [hasMovedToUserLocation, setHasMovedToUserLocation] = useState(false);
-
+  const [isStyleReady, setIsStyleReady] = useState(false);
   /**
    * Request location permissions from the user.
    * Handles both iOS and Android permission flows.
@@ -118,6 +90,41 @@ export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError 
   /**
    * Center camera on user location once permissions are granted and location is available.
    */
+  useEffect(() => {
+    let isMounted = true;
+  
+    const testStyleFetch = async () => {
+      try {
+        const res = await fetch(MAP_STYLE_URL, { method: 'GET' });
+        const text = await res.text();
+  
+        if (!isMounted) return;
+  
+        console.log('Style fetch status:', res.status);
+        console.log('Style fetch first 120 chars:', text.slice(0, 120));
+      } catch (e) {
+        if (!isMounted) return;
+        console.error('Style fetch failed:', e);
+      }
+    };
+  
+    testStyleFetch();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (!isStyleReady || !cameraRef.current) return;
+  
+    // Force a very obvious street-level view in Denver.
+    cameraRef.current.setCamera({
+      centerCoordinate: [-104.9903, 39.7392],
+      zoomLevel: 13,
+      animationDuration: 800,
+    });
+  
+    console.log('Forced camera to Denver z=13 for debug');
+  }, [isStyleReady]);
   useEffect(() => {
     if (
       permissionStatus === LocationPermissionStatus.GRANTED &&
@@ -170,13 +177,29 @@ export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError 
   return (
     <MLMapView
       style={[styles.map, style]}
-      styleJSON={JSON.stringify(MAP_STYLE_JSON)}
+      styleURL={MAP_STYLE_URL}
+      onDidFinishLoadingStyle={() => {
+        console.log('Style fully loaded');
+        setIsStyleReady(true);
+      }}
+      onDidFailLoadingStyle={(e) => console.error('Style failed:', e)}
       onDidFinishLoadingMap={handleMapReady}
       onDidFailLoadingMap={handleMapError}
       logoEnabled={false}
       attributionEnabled={true}
       attributionPosition={{ bottom: 8, right: 8 }}
     >
+      <RasterSource
+        id="carto-raster"
+        tileUrlTemplates={[
+          'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+          'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+          'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+          'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+        ]}
+      >
+        <RasterLayer id="carto-raster-layer" />
+      </RasterSource>
       <Camera
         ref={cameraRef}
         defaultSettings={{

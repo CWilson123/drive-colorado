@@ -37,7 +37,7 @@ export const DEFAULT_MAP_CENTER: Coordinates = {
  * Level 7 provides a state-wide view showing most of Colorado's geography
  * while maintaining enough detail to see major cities and highways.
  */
-export const DEFAULT_ZOOM_LEVEL: number = 7;
+export const DEFAULT_ZOOM_LEVEL: number = 11;
 
 /**
  * Geographic bounding box for the state of Colorado.
@@ -62,7 +62,7 @@ export const COLORADO_BOUNDS: BoundingBox = {
  * Prevents users from zooming out too far, maintaining focus on Colorado
  * and surrounding regions. Level 5 shows Colorado and neighboring states.
  */
-export const MIN_ZOOM: number = 5;
+export const MIN_ZOOM: number = 3;
 
 /**
  * Maximum allowed zoom level.
@@ -87,6 +87,8 @@ export const OSM_TILE_URLS: string[] = [
 ];
 
 /**
- * @deprecated Use OSM_TILE_URLS array instead for proper load balancing.
+ * MapLibre style URL for the base map.
+ * Carto's vector style provides streets and administrative boundaries without
+ * requiring API keys, and is less likely to be blocked than direct OSM tiles.
  */
-export const MAP_STYLE_URL: string = OSM_TILE_URLS[0];
+export const MAP_STYLE_URL: string = 'https://demotiles.maplibre.org/style.json';
