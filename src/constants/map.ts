@@ -87,63 +87,8 @@ export const OSM_TILE_URLS: string[] = [
 ];
 
 /**
- * Carto raster tile URLs for the base map.
- * Carto's CDN-backed tiles are less likely to be blocked in native environments
- * than the default OpenStreetMap tile servers and include roads + boundaries.
+ * MapLibre style URL for the base map.
+ * Carto's vector style provides streets and administrative boundaries without
+ * requiring API keys, and is less likely to be blocked than direct OSM tiles.
  */
-export const CARTO_RASTER_TILE_URLS: string[] = [
-  'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-  'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-  'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-  'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-];
-
-export interface MapStyleSource {
-  type: 'raster';
-  tiles: string[];
-  tileSize: number;
-  attribution: string;
-  maxzoom: number;
-}
-
-export interface MapStyleLayer {
-  id: string;
-  type: 'raster';
-  source: string;
-  minzoom: number;
-  maxzoom: number;
-}
-
-export interface MapStyleSpecification {
-  version: number;
-  name: string;
-  sources: Record<string, MapStyleSource>;
-  layers: MapStyleLayer[];
-}
-
-/**
- * MapLibre style specification for raster tiles.
- * Centralized so components avoid embedding magic configuration values.
- */
-export const MAP_STYLE_JSON: MapStyleSpecification = {
-  version: 8,
-  name: 'Carto Light',
-  sources: {
-    carto: {
-      type: 'raster',
-      tiles: CARTO_RASTER_TILE_URLS,
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors © CARTO',
-      maxzoom: 19,
-    },
-  },
-  layers: [
-    {
-      id: 'carto-tiles',
-      type: 'raster',
-      source: 'carto',
-      minzoom: 0,
-      maxzoom: 19,
-    },
-  ],
-};
+export const MAP_STYLE_URL: string = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';

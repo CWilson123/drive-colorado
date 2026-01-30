@@ -3,14 +3,14 @@
  *
  * This component provides a MapLibre-based map view centered on Denver, Colorado
  * by default, with automatic centering on the user's location once permissions
- * are granted. Uses Carto raster tiles for the base map.
+ * are granted. Uses Carto vector tiles for the base map.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Alert, Platform } from 'react-native';
 import { MapView as MLMapView, Camera, UserLocation } from '@maplibre/maplibre-react-native';
 import * as ExpoLocation from 'expo-location';
-import { DEFAULT_MAP_CENTER, DEFAULT_ZOOM_LEVEL, MIN_ZOOM, MAX_ZOOM, MAP_STYLE_JSON } from '@/constants';
+import { DEFAULT_MAP_CENTER, DEFAULT_ZOOM_LEVEL, MIN_ZOOM, MAX_ZOOM, MAP_STYLE_URL } from '@/constants';
 import { LocationPermissionStatus } from './MapView.types';
 import type { MapViewProps, UserLocation as UserLocationData } from './MapView.types';
 
@@ -18,7 +18,7 @@ import type { MapViewProps, UserLocation as UserLocationData } from './MapView.t
  * Full-screen map component with user location tracking.
  *
  * Features:
- * - Displays Carto raster tiles via MapLibre
+ * - Displays Carto vector tiles via MapLibre
  * - Centers on Denver, CO by default
  * - Requests location permissions on mount
  * - Automatically centers on user location when granted
@@ -136,7 +136,7 @@ export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError 
   return (
     <MLMapView
       style={[styles.map, style]}
-      styleJSON={JSON.stringify(MAP_STYLE_JSON)}
+      styleURL={MAP_STYLE_URL}
       onDidFinishLoadingMap={handleMapReady}
       onDidFailLoadingMap={handleMapError}
       logoEnabled={false}

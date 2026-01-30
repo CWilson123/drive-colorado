@@ -14,11 +14,7 @@ export {
   MIN_ZOOM,
   MAX_ZOOM,
   OSM_TILE_URLS,
-  CARTO_RASTER_TILE_URLS,
-  MAP_STYLE_JSON,
+  MAP_STYLE_URL,
   type Coordinates,
   type BoundingBox,
-  type MapStyleSource,
-  type MapStyleLayer,
-  type MapStyleSpecification,
 } from './map';
