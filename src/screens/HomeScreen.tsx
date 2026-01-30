@@ -20,6 +20,11 @@ import {
   DEFAULT_MAP_LAYERS,
 } from '@/components';
 import type { MapLayer, StatusLevel } from '@/components';
+import {
+  BOTTOM_INFO_BAR_HEIGHT,
+  OVERLAY_BOTTOM_SPACING,
+  OVERLAY_EDGE_PADDING,
+} from '@/constants';
 
 /**
  * Selected info data for the bottom bar.
@@ -219,7 +224,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = () => {
         />
 
         {/* My Location Button */}
-        <MyLocationButton onPress={handleMyLocationPress} />
+        <View style={styles.myLocationButtonContainer}>
+          <MyLocationButton onPress={handleMyLocationPress} />
+        </View>
 
         {/* Top Bar */}
         <TopBar
@@ -265,5 +272,10 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  myLocationButtonContainer: {
+    position: 'absolute',
+    right: OVERLAY_EDGE_PADDING,
+    bottom: BOTTOM_INFO_BAR_HEIGHT + OVERLAY_BOTTOM_SPACING,
   },
 });

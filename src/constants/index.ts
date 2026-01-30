@@ -85,3 +85,10 @@ export {
   Z_INDEX_MODAL,
   Z_INDEX_TOOLTIP,
 } from './colors';
+
+// Layout constants
+export {
+  OVERLAY_EDGE_PADDING,
+  OVERLAY_BOTTOM_SPACING,
+  BOTTOM_INFO_BAR_HEIGHT,
+} from './layout';
