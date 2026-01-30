@@ -3,56 +3,31 @@
  *
  * This component provides a MapLibre-based map view centered on Denver, Colorado
  * by default, with automatic centering on the user's location once permissions
- * are granted. Uses OpenStreetMap raster tiles for the base map.
+ * are granted. Uses Carto raster tiles for the base map.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Alert, Platform } from 'react-native';
-import { MapView as MLMapView, Camera, UserLocation } from '@maplibre/maplibre-react-native';
+import { MapView as MLMapView, Camera, UserLocation, RasterLayer, RasterSource } from '@maplibre/maplibre-react-native';
 import * as ExpoLocation from 'expo-location';
 import {
+  BASEMAP_RASTER_LAYER_ID,
+  BASEMAP_RASTER_SOURCE_ID,
+  BASEMAP_RASTER_TILE_URLS,
   DEFAULT_MAP_CENTER,
   DEFAULT_ZOOM_LEVEL,
-  MIN_ZOOM,
+  MAP_STYLE_JSON,
   MAX_ZOOM,
-  OSM_TILE_URLS,
+  MIN_ZOOM,
 } from '@/constants';
 import { LocationPermissionStatus } from './MapView.types';
 import type { MapViewProps, UserLocation as UserLocationData } from './MapView.types';
 
 /**
- * MapLibre style specification for OpenStreetMap raster tiles.
- * This style configuration defines the map's visual appearance and tile sources.
- * Uses multiple tile server subdomains for better load distribution.
- */
-const MAP_STYLE_JSON = {
-  version: 8,
-  name: 'OpenStreetMap',
-  sources: {
-    osm: {
-      type: 'raster',
-      tiles: OSM_TILE_URLS,
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors',
-      maxzoom: 19,
-    },
-  },
-  layers: [
-    {
-      id: 'osm-tiles',
-      type: 'raster',
-      source: 'osm',
-      minzoom: 0,
-      maxzoom: 19,
-    },
-  ],
-};
-
-/**
  * Full-screen map component with user location tracking.
  *
  * Features:
- * - Displays OpenStreetMap tiles via MapLibre
+ * - Displays Carto raster tiles via MapLibre
  * - Centers on Denver, CO by default
  * - Requests location permissions on mount
  * - Automatically centers on user location when granted
@@ -177,6 +152,9 @@ export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError 
       attributionEnabled={true}
       attributionPosition={{ bottom: 8, right: 8 }}
     >
+      <RasterSource id={BASEMAP_RASTER_SOURCE_ID} tileUrlTemplates={BASEMAP_RASTER_TILE_URLS}>
+        <RasterLayer id={BASEMAP_RASTER_LAYER_ID} />
+      </RasterSource>
       <Camera
         ref={cameraRef}
         defaultSettings={{
