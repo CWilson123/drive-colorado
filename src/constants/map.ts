@@ -87,6 +87,8 @@ export const OSM_TILE_URLS: string[] = [
 ];
 
 /**
- * @deprecated Use OSM_TILE_URLS array instead for proper load balancing.
+ * MapLibre style URL for the base map.
+ * Uses MapLibre's hosted demo style (OpenStreetMap data) to avoid tile access issues
+ * when raster tiles are blocked or rate-limited in native environments.
  */
-export const MAP_STYLE_URL: string = OSM_TILE_URLS[0];
+export const MAP_STYLE_URL: string = 'https://demotiles.maplibre.org/style.json';

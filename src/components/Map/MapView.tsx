@@ -10,43 +10,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Alert, Platform } from 'react-native';
 import { MapView as MLMapView, Camera, UserLocation } from '@maplibre/maplibre-react-native';
 import * as ExpoLocation from 'expo-location';
-import {
-  DEFAULT_MAP_CENTER,
-  DEFAULT_ZOOM_LEVEL,
-  MIN_ZOOM,
-  MAX_ZOOM,
-  OSM_TILE_URLS,
-} from '@/constants';
+import { DEFAULT_MAP_CENTER, DEFAULT_ZOOM_LEVEL, MIN_ZOOM, MAX_ZOOM, MAP_STYLE_URL } from '@/constants';
 import { LocationPermissionStatus } from './MapView.types';
 import type { MapViewProps, UserLocation as UserLocationData } from './MapView.types';
-
-/**
- * MapLibre style specification for OpenStreetMap raster tiles.
- * This style configuration defines the map's visual appearance and tile sources.
- * Uses multiple tile server subdomains for better load distribution.
- */
-const MAP_STYLE_JSON = {
-  version: 8,
-  name: 'OpenStreetMap',
-  sources: {
-    osm: {
-      type: 'raster',
-      tiles: OSM_TILE_URLS,
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors',
-      maxzoom: 19,
-    },
-  },
-  layers: [
-    {
-      id: 'osm-tiles',
-      type: 'raster',
-      source: 'osm',
-      minzoom: 0,
-      maxzoom: 19,
-    },
-  ],
-};
 
 /**
  * Full-screen map component with user location tracking.
@@ -170,7 +136,7 @@ export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError 
   return (
     <MLMapView
       style={[styles.map, style]}
-      styleJSON={JSON.stringify(MAP_STYLE_JSON)}
+      styleURL={MAP_STYLE_URL}
       onDidFinishLoadingMap={handleMapReady}
       onDidFailLoadingMap={handleMapError}
       logoEnabled={false}
