@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "drive-colorado",
+    "name": "Drive Colorado",
     "slug": "drive-colorado",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,10 +20,14 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.drivecolorado"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "@maplibre/maplibre-react-native"
+    ]
   }
 }
