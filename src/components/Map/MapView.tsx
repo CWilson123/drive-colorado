@@ -3,22 +3,19 @@
  *
  * This component provides a MapLibre-based map view centered on Denver, Colorado
  * by default, with automatic centering on the user's location once permissions
- * are granted. Uses Carto raster tiles for the base map.
+ * are granted. Uses OpenFreeMap Liberty vector tiles for the base map.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Alert, Platform } from 'react-native';
-import { MapView as MLMapView, Camera, UserLocation, RasterLayer, RasterSource } from '@maplibre/maplibre-react-native';
+import { MapView as MLMapView, Camera, UserLocation, type CameraRef } from '@maplibre/maplibre-react-native';
 import * as ExpoLocation from 'expo-location';
 import {
-  BASEMAP_RASTER_LAYER_ID,
-  BASEMAP_RASTER_SOURCE_ID,
-  BASEMAP_RASTER_TILE_URLS,
   DEFAULT_MAP_CENTER,
   DEFAULT_ZOOM_LEVEL,
-  MAP_STYLE_JSON,
   MAX_ZOOM,
   MIN_ZOOM,
+  OPENFREEMAP_LIBERTY_STYLE_URL,
 } from '@/constants';
 import { LocationPermissionStatus } from './MapView.types';
 import type { MapViewProps, UserLocation as UserLocationData } from './MapView.types';
@@ -27,7 +24,7 @@ import type { MapViewProps, UserLocation as UserLocationData } from './MapView.t
  * Full-screen map component with user location tracking.
  *
  * Features:
- * - Displays Carto raster tiles via MapLibre
+ * - Displays OpenFreeMap Liberty vector tiles via MapLibre
  * - Centers on Denver, CO by default
  * - Requests location permissions on mount
  * - Automatically centers on user location when granted
@@ -37,7 +34,7 @@ import type { MapViewProps, UserLocation as UserLocationData } from './MapView.t
  * @returns Rendered map view
  */
 export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError }) => {
-  const cameraRef = useRef<Camera>(null);
+  const cameraRef = useRef<CameraRef>(null);
   const [permissionStatus, setPermissionStatus] = useState<LocationPermissionStatus>(
     LocationPermissionStatus.PENDING
   );
@@ -120,12 +117,12 @@ export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError 
   };
 
   /**
-   * Handle map errors.
+   * Handle map load failure.
    */
-  const handleMapError = (error: unknown): void => {
-    console.error('Map error:', error);
-    if (onMapError && error instanceof Error) {
-      onMapError(error);
+  const handleMapError = (): void => {
+    console.error('Map failed to load');
+    if (onMapError) {
+      onMapError(new Error('Map failed to load'));
     }
   };
 
@@ -145,16 +142,13 @@ export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError 
   return (
     <MLMapView
       style={[styles.map, style]}
-      styleJSON={JSON.stringify(MAP_STYLE_JSON)}
+      mapStyle={OPENFREEMAP_LIBERTY_STYLE_URL}
       onDidFinishLoadingMap={handleMapReady}
       onDidFailLoadingMap={handleMapError}
       logoEnabled={false}
       attributionEnabled={true}
       attributionPosition={{ bottom: 8, right: 8 }}
     >
-      <RasterSource id={BASEMAP_RASTER_SOURCE_ID} tileUrlTemplates={BASEMAP_RASTER_TILE_URLS}>
-        <RasterLayer id={BASEMAP_RASTER_LAYER_ID} />
-      </RasterSource>
       <Camera
         ref={cameraRef}
         defaultSettings={{

@@ -3,7 +3,7 @@
  * Import constants from this file to ensure clean, organized imports throughout the app.
  *
  * Example usage:
- *   import { DEFAULT_MAP_CENTER, DEFAULT_ZOOM_LEVEL } from '@/constants';
+ *   import { DEFAULT_MAP_CENTER, DEFAULT_ZOOM_LEVEL, CO_BLUE } from '@/constants';
  */
 
 // Map configuration constants
@@ -13,14 +13,75 @@ export {
   COLORADO_BOUNDS,
   MIN_ZOOM,
   MAX_ZOOM,
-  OSM_TILE_URLS,
-  BASEMAP_RASTER_TILE_URLS,
-  BASEMAP_RASTER_SOURCE_ID,
-  BASEMAP_RASTER_LAYER_ID,
-  MAP_STYLE_JSON,
+  OPENFREEMAP_LIBERTY_STYLE_URL,
   type Coordinates,
   type BoundingBox,
-  type MapStyleSource,
-  type MapStyleLayer,
-  type MapStyleSpecification,
 } from './map';
+
+// Colors and theme constants
+export {
+  // Colorado flag colors
+  CO_BLUE,
+  CO_BLUE_LIGHT,
+  CO_RED,
+  CO_RED_LIGHT,
+  CO_GOLD,
+  CO_GOLD_MUTED,
+  CO_WHITE,
+  CO_GRAY_LIGHT,
+  CO_GRAY,
+  CO_GRAY_DARK,
+  // Semantic colors
+  COLOR_PRIMARY,
+  COLOR_PRIMARY_HOVER,
+  COLOR_ACCENT,
+  COLOR_ACCENT_HOVER,
+  COLOR_WARNING,
+  COLOR_WARNING_MUTED,
+  COLOR_SUCCESS,
+  COLOR_ERROR,
+  COLOR_BACKGROUND,
+  COLOR_SURFACE,
+  COLOR_TEXT_PRIMARY,
+  COLOR_TEXT_SECONDARY,
+  COLOR_BORDER,
+  // Shadows
+  SHADOW_SM,
+  SHADOW_MD,
+  SHADOW_LG,
+  SHADOW_XL,
+  // Border radius
+  BORDER_RADIUS_SM,
+  BORDER_RADIUS_MD,
+  BORDER_RADIUS_LG,
+  BORDER_RADIUS_FULL,
+  // Spacing
+  SPACING_XS,
+  SPACING_SM,
+  SPACING_MD,
+  SPACING_LG,
+  SPACING_XL,
+  SPACING_XXL,
+  // Typography
+  FONT_SIZE_XS,
+  FONT_SIZE_SM,
+  FONT_SIZE_MD,
+  FONT_SIZE_LG,
+  FONT_SIZE_XL,
+  FONT_SIZE_XXL,
+  FONT_SIZE_HEADING,
+  FONT_WEIGHT_NORMAL,
+  FONT_WEIGHT_MEDIUM,
+  FONT_WEIGHT_SEMIBOLD,
+  FONT_WEIGHT_BOLD,
+  // Opacity
+  OPACITY_DISABLED,
+  OPACITY_HOVER,
+  OPACITY_OVERLAY,
+  // Z-Index
+  Z_INDEX_BASE,
+  Z_INDEX_DROPDOWN,
+  Z_INDEX_STICKY,
+  Z_INDEX_MODAL,
+  Z_INDEX_TOOLTIP,
+} from './colors';

@@ -67,81 +67,17 @@ export const MIN_ZOOM: number = 5;
 /**
  * Maximum allowed zoom level.
  * Prevents users from zooming in beyond the detail level provided by the
- * map tiles. Level 15 provides street-level detail suitable for navigation.
+ * map tiles. Level 18 provides street-level detail suitable for navigation
+ * with vector tiles.
  */
-export const MAX_ZOOM: number = 15;
+export const MAX_ZOOM: number = 18;
 
 /**
- * OpenStreetMap tile server URLs.
- * Uses multiple subdomains (a, b, c) for better load distribution.
- * The {z}/{x}/{y} placeholders are replaced by MapLibre with the appropriate
- * zoom level and tile coordinates.
+ * OpenFreeMap Liberty style URL for vector tiles.
+ * Liberty is a clean, professional map style suitable for navigation applications.
+ * Uses OpenMapTiles schema with data from OpenStreetMap contributors.
  *
- * Note: For production use, consider using a tile service with higher rate limits
- * or your own tile server to avoid exceeding OpenStreetMap's usage policy.
+ * @see https://openfreemap.org/
  */
-export const OSM_TILE_URLS: string[] = [
-  'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
-];
-
-/**
- * Carto raster tile URLs for the base map.
- * Carto's CDN-backed tiles are less likely to be blocked in native environments
- * than the default OpenStreetMap tile servers and include roads + boundaries.
- */
-export const BASEMAP_RASTER_TILE_URLS: string[] = [
-  'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-  'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-  'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-  'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-];
-
-/**
- * MapLibre style IDs for raster tile rendering.
- */
-export const BASEMAP_RASTER_SOURCE_ID: string = 'basemap-raster';
-export const BASEMAP_RASTER_LAYER_ID: string = 'basemap-raster-layer';
-
-export interface MapStyleSource {
-  type: 'raster';
-  tiles: string[];
-  tileSize: number;
-  attribution: string;
-  maxzoom: number;
-}
-
-export interface MapStyleLayer {
-  id: string;
-  type: 'background';
-  paint: {
-    'background-color': string;
-  };
-}
-
-export interface MapStyleSpecification {
-  version: number;
-  name: string;
-  sources: Record<string, MapStyleSource>;
-  layers: MapStyleLayer[];
-}
-
-/**
- * Minimal MapLibre style specification for raster tiles.
- * Keeps the style lightweight while raster layers are injected via MapLibre components.
- */
-export const MAP_STYLE_JSON: MapStyleSpecification = {
-  version: 8,
-  name: 'Drive Colorado Base',
-  sources: {},
-  layers: [
-    {
-      id: 'background',
-      type: 'background',
-      paint: {
-        'background-color': '#FFFFFF',
-      },
-    },
-  ],
-};
+export const OPENFREEMAP_LIBERTY_STYLE_URL: string =
+  'https://tiles.openfreemap.org/styles/liberty'; 

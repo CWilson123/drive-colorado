@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { Colors } from '../constants/colors';
+import { COLOR_PRIMARY, COLOR_SUCCESS, CO_WHITE } from '@/constants';
 
 export const Button = ({ title, onPress, variant = 'primary', disabled = false }) => {
   return (
@@ -37,10 +37,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: COLOR_PRIMARY,
   },
   secondaryButton: {
-    backgroundColor: Colors.secondary,
+    backgroundColor: COLOR_SUCCESS,
   },
   disabledButton: {
     opacity: 0.5,
@@ -50,9 +50,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   primaryButtonText: {
-    color: Colors.white,
+    color: CO_WHITE,
   },
   secondaryButtonText: {
-    color: Colors.white,
+    color: CO_WHITE,
   },
 });
