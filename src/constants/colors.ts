@@ -17,6 +17,7 @@ export const CO_GOLD_MUTED = '#F4C430';
 
 // Neutral Colors
 export const CO_WHITE = '#FFFFFF';
+export const CO_BLACK = '#000000';
 export const CO_GRAY_LIGHT = '#F5F5F5';
 export const CO_GRAY = '#E0E0E0';
 export const CO_GRAY_DARK = '#666666';
