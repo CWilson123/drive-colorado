@@ -87,6 +87,61 @@ export const OSM_TILE_URLS: string[] = [
 ];
 
 /**
- * @deprecated Use OSM_TILE_URLS array instead for proper load balancing.
+ * Carto raster tile URLs for the base map.
+ * Carto's CDN-backed tiles are less likely to be blocked in native environments
+ * than the default OpenStreetMap tile servers and include roads + boundaries.
  */
-export const MAP_STYLE_URL: string = OSM_TILE_URLS[0];
+export const BASEMAP_RASTER_TILE_URLS: string[] = [
+  'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+  'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+  'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+  'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+];
+
+/**
+ * MapLibre style IDs for raster tile rendering.
+ */
+export const BASEMAP_RASTER_SOURCE_ID: string = 'basemap-raster';
+export const BASEMAP_RASTER_LAYER_ID: string = 'basemap-raster-layer';
+
+export interface MapStyleSource {
+  type: 'raster';
+  tiles: string[];
+  tileSize: number;
+  attribution: string;
+  maxzoom: number;
+}
+
+export interface MapStyleLayer {
+  id: string;
+  type: 'background';
+  paint: {
+    'background-color': string;
+  };
+}
+
+export interface MapStyleSpecification {
+  version: number;
+  name: string;
+  sources: Record<string, MapStyleSource>;
+  layers: MapStyleLayer[];
+}
+
+/**
+ * Minimal MapLibre style specification for raster tiles.
+ * Keeps the style lightweight while raster layers are injected via MapLibre components.
+ */
+export const MAP_STYLE_JSON: MapStyleSpecification = {
+  version: 8,
+  name: 'Drive Colorado Base',
+  sources: {},
+  layers: [
+    {
+      id: 'background',
+      type: 'background',
+      paint: {
+        'background-color': '#FFFFFF',
+      },
+    },
+  ],
+};
