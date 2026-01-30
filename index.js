@@ -1,8 +1,17 @@
 import { registerRootComponent } from 'expo';
-
+import { Logger } from '@maplibre/maplibre-react-native';
 import App from './App';
 
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
+Logger.setLogLevel('warning'); // <-- important: tiles/glyph failures often show as warnings
+
+Logger.setLogCallback((log) => {
+  const msg = String(log?.message ?? '');
+  const tag = String(log?.tag ?? '');
+
+  // Only suppress the noisy cancel spam
+  if (tag === 'Mbgl-HttpRequest' && msg.includes('Canceled')) return true;
+
+  return false;
+});
+
 registerRootComponent(App);
