@@ -16,6 +16,7 @@ import {
   BOTTOM_INFO_BAR_HEIGHT,
   MY_LOCATION_BUTTON_SIZE,
   MY_LOCATION_ICON_SIZE,
+  MY_LOCATION_BUTTON_BOTTOM_OFFSET,
   MY_LOCATION_BUTTON_SHADOW_OFFSET,
   MY_LOCATION_BUTTON_SHADOW_OPACITY,
   MY_LOCATION_BUTTON_SHADOW_RADIUS,
@@ -40,7 +41,12 @@ export const MyLocationButton: React.FC<MyLocationButtonProps> = ({
       style={[
         styles.button,
         {
-          bottom: insets.bottom + SPACING_MD + BOTTOM_INFO_BAR_HEIGHT + SPACING_SM,
+          bottom:
+            insets.bottom +
+            SPACING_MD +
+            BOTTOM_INFO_BAR_HEIGHT +
+            SPACING_SM +
+            MY_LOCATION_BUTTON_BOTTOM_OFFSET,
         },
         style,
       ]}
