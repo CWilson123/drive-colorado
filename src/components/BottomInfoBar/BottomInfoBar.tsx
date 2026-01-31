@@ -11,6 +11,7 @@ import {
   CO_GRAY_DARK,
   CO_RED,
   CO_GOLD,
+  CO_BLACK,
   COLOR_SUCCESS,
   BORDER_RADIUS_LG,
   SPACING_SM,
@@ -19,10 +20,15 @@ import {
   FONT_SIZE_MD,
   FONT_WEIGHT_BOLD,
   FONT_WEIGHT_NORMAL,
+  BOTTOM_INFO_BAR_HEIGHT,
+  BOTTOM_INFO_BAR_STATUS_DOT_SIZE,
+  BOTTOM_INFO_BAR_TITLE_MARGIN_BOTTOM,
+  BOTTOM_INFO_BAR_SHADOW_OFFSET,
+  BOTTOM_INFO_BAR_SHADOW_OPACITY,
+  BOTTOM_INFO_BAR_SHADOW_RADIUS,
+  BOTTOM_INFO_BAR_ELEVATION,
 } from '@/constants';
 import type { BottomInfoBarProps, StatusLevel } from './BottomInfoBar.types';
-
-const STATUS_DOT_SIZE = 12;
 
 /**
  * Maps status level to indicator color.
@@ -89,18 +95,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: CO_WHITE,
     borderRadius: BORDER_RADIUS_LG,
+    minHeight: BOTTOM_INFO_BAR_HEIGHT,
     paddingVertical: SPACING_MD,
     paddingHorizontal: SPACING_MD,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowColor: CO_BLACK,
+    shadowOffset: BOTTOM_INFO_BAR_SHADOW_OFFSET,
+    shadowOpacity: BOTTOM_INFO_BAR_SHADOW_OPACITY,
+    shadowRadius: BOTTOM_INFO_BAR_SHADOW_RADIUS,
+    elevation: BOTTOM_INFO_BAR_ELEVATION,
   },
   statusDot: {
-    width: STATUS_DOT_SIZE,
-    height: STATUS_DOT_SIZE,
-    borderRadius: STATUS_DOT_SIZE / 2,
+    width: BOTTOM_INFO_BAR_STATUS_DOT_SIZE,
+    height: BOTTOM_INFO_BAR_STATUS_DOT_SIZE,
+    borderRadius: BOTTOM_INFO_BAR_STATUS_DOT_SIZE / 2,
     marginRight: SPACING_SM,
   },
   textContainer: {
@@ -110,7 +117,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE_MD,
     fontWeight: FONT_WEIGHT_BOLD,
     color: CO_BLUE,
-    marginBottom: 2,
+    marginBottom: BOTTOM_INFO_BAR_TITLE_MARGIN_BOTTOM,
   },
   subtitle: {
     fontSize: FONT_SIZE_SM,
