@@ -3,15 +3,21 @@
  * All parsers handle errors gracefully and never throw - they return empty arrays on failure.
  */
 
-import { CO_BLUE } from '@/constants';
+import { CO_BLUE, CO_GOLD } from '@/constants';
 import type {
   RoadCondition,
   Incident,
   WeatherStation,
   SnowPlow,
+  PlannedEvent,
+  DmsSign,
+  WorkZone,
   MapOverlayData,
   MapMarkerData,
 } from '@/types';
+
+/** Work zone overlay color (orange/amber) */
+const WORK_ZONE_COLOR = '#F59E0B';
 
 /**
  * Validates that coordinates are valid numbers
@@ -289,6 +295,199 @@ export const parseSnowPlowsToMarkers = (records: SnowPlow[]): MapMarkerData[] =>
     return markers;
   } catch (error) {
     console.error('[Parser] Failed to parse snow plows:', error);
+    return [];
+  }
+};
+
+/**
+ * Parses planned event features into map marker data
+ * IMPORTANT: Uses first coordinate from MultiPoint geometry
+ * @param features - Array of PlannedEvent GeoJSON features
+ * @returns Array of MapMarkerData ready for map rendering
+ */
+export const parsePlannedEventsToMarkers = (features: PlannedEvent[]): MapMarkerData[] => {
+  console.log('[Parser] parsePlannedEventsToMarkers: input count =', features.length);
+  try {
+    const markers: MapMarkerData[] = [];
+
+    for (const feature of features) {
+      try {
+        // Validate required fields
+        if (!feature?.properties?.id) {
+          console.warn('Planned event missing id, skipping');
+          continue;
+        }
+
+        if (!feature?.geometry?.coordinates || !Array.isArray(feature.geometry.coordinates)) {
+          console.warn(`Planned event ${feature.properties.id} has invalid coordinates, skipping`);
+          continue;
+        }
+
+        // Use first coordinate from MultiPoint
+        const firstCoord = feature.geometry.coordinates[0];
+        if (!isValidCoordinate(firstCoord)) {
+          console.warn(`Planned event ${feature.properties.id} has invalid first coordinate, skipping`);
+          continue;
+        }
+
+        const [longitude, latitude] = firstCoord;
+
+        // Build subtitle from type and route
+        const subtitle = [feature.properties.type, feature.properties.routeName]
+          .filter(Boolean)
+          .join(' - ');
+
+        markers.push({
+          id: feature.properties.id,
+          coordinate: { latitude, longitude },
+          layerType: 'plannedEvents',
+          title: feature.properties.name || 'Planned Event',
+          subtitle: subtitle || undefined,
+          rawData: feature,
+        });
+      } catch (error) {
+        console.warn('Failed to parse planned event feature:', error);
+        continue;
+      }
+    }
+
+    console.log('[Parser] parsePlannedEventsToMarkers: output count =', markers.length);
+    return markers;
+  } catch (error) {
+    console.error('[Parser] Failed to parse planned events:', error);
+    return [];
+  }
+};
+
+/**
+ * Parses DMS sign features into map marker data
+ * @param features - Array of DmsSign GeoJSON features
+ * @returns Array of MapMarkerData ready for map rendering
+ */
+export const parseDmsSignsToMarkers = (features: DmsSign[]): MapMarkerData[] => {
+  console.log('[Parser] parseDmsSignsToMarkers: input count =', features.length);
+  try {
+    const markers: MapMarkerData[] = [];
+
+    for (const feature of features) {
+      try {
+        // Validate required fields
+        if (!feature?.properties?.id) {
+          console.warn('DMS sign missing id, skipping');
+          continue;
+        }
+
+        if (!isValidCoordinate(feature?.geometry?.coordinates)) {
+          console.warn(`DMS sign ${feature.properties.id} has invalid coordinates, skipping`);
+          continue;
+        }
+
+        const [longitude, latitude] = feature.geometry.coordinates;
+
+        // Build subtitle from display status and route
+        const displayStatus = feature.properties.displayStatus || 'unknown';
+        const subtitle = [
+          displayStatus === 'on' ? 'Active' : displayStatus === 'off' ? 'Off' : displayStatus,
+          feature.properties.routeName,
+        ]
+          .filter(Boolean)
+          .join(' - ');
+
+        markers.push({
+          id: feature.properties.id,
+          coordinate: { latitude, longitude },
+          layerType: 'dmsSigns',
+          title: feature.properties.publicName || feature.properties.name || 'DMS Sign',
+          subtitle: subtitle || undefined,
+          rawData: feature,
+        });
+      } catch (error) {
+        console.warn('Failed to parse DMS sign feature:', error);
+        continue;
+      }
+    }
+
+    console.log('[Parser] parseDmsSignsToMarkers: output count =', markers.length);
+    return markers;
+  } catch (error) {
+    console.error('[Parser] Failed to parse DMS signs:', error);
+    return [];
+  }
+};
+
+/**
+ * Parses work zone features into map overlay data
+ * NOTE: Work zones use WZDx format with core_details in properties
+ * @param features - Array of WorkZone features
+ * @returns Array of MapOverlayData ready for map rendering
+ */
+export const parseWorkZonesToOverlays = (features: WorkZone[]): MapOverlayData[] => {
+  console.log('[Parser] parseWorkZonesToOverlays: input count =', features.length);
+  try {
+    const overlays: MapOverlayData[] = [];
+
+    for (const feature of features) {
+      try {
+        // Generate ID from data source or index
+        const id = feature?.properties?.core_details?.data_source_id || `wz-${overlays.length}`;
+
+        if (!feature?.geometry?.coordinates || !Array.isArray(feature.geometry.coordinates)) {
+          console.warn(`Work zone ${id} has invalid coordinates, skipping`);
+          continue;
+        }
+
+        // Handle both LineString and MultiPoint geometries
+        let coordinates: Array<[number, number]> = [];
+
+        if (feature.geometry.type === 'LineString') {
+          // Already a line - validate coordinates
+          coordinates = feature.geometry.coordinates.filter((coord) => {
+            if (!isValidCoordinate(coord)) {
+              console.warn(`Work zone ${id} has invalid coordinate, filtering out`);
+              return false;
+            }
+            return true;
+          });
+        } else if (feature.geometry.type === 'MultiPoint') {
+          // Convert MultiPoint to line by connecting points in order
+          coordinates = feature.geometry.coordinates.filter((coord) => {
+            if (!isValidCoordinate(coord)) {
+              console.warn(`Work zone ${id} has invalid coordinate, filtering out`);
+              return false;
+            }
+            return true;
+          });
+        }
+
+        if (coordinates.length < 2) {
+          console.warn(`Work zone ${id} has fewer than 2 valid coordinates, skipping`);
+          continue;
+        }
+
+        const coreDetails = feature.properties.core_details;
+        const routeName = coreDetails?.road_names?.join(', ') || 'Unknown Road';
+
+        overlays.push({
+          id,
+          coordinates,
+          layerType: 'workZone',
+          routeName,
+          color: WORK_ZONE_COLOR,
+          description: coreDetails?.description,
+          direction: coreDetails?.direction,
+          eventType: coreDetails?.event_type,
+          rawData: feature,
+        });
+      } catch (error) {
+        console.warn('Failed to parse work zone feature:', error);
+        continue;
+      }
+    }
+
+    console.log('[Parser] parseWorkZonesToOverlays: output count =', overlays.length);
+    return overlays;
+  } catch (error) {
+    console.error('[Parser] Failed to parse work zones:', error);
     return [];
   }
 };

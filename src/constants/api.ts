@@ -21,6 +21,9 @@ export const COTRIP_ENDPOINTS = {
   incidents: '/incidents',
   weatherStations: '/weatherStations',
   snowPlows: '/snowPlows',
+  plannedEvents: '/plannedEvents',
+  dmsSigns: '/signs',
+  workZones: '/cwz',
 } as const;
 
 /**

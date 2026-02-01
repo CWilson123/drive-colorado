@@ -6,15 +6,15 @@
  * are granted. Uses OpenFreeMap Liberty vector tiles for the base map.
  */
 
-import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { StyleSheet, Alert, Platform } from 'react-native';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { StyleSheet, Alert, Platform, View, GestureResponderEvent } from 'react-native';
 import {
   MapView as MLMapView,
   Camera,
   UserLocation,
   ShapeSource,
-  CircleLayer,
   LineLayer,
+  MarkerView,
   type CameraRef,
 } from '@maplibre/maplibre-react-native';
 import * as ExpoLocation from 'expo-location';
@@ -24,15 +24,78 @@ import {
   MAX_ZOOM,
   MIN_ZOOM,
   OPENFREEMAP_LIBERTY_STYLE_URL,
-  CO_RED,
   CO_BLUE,
-  CO_GOLD,
   CO_GRAY,
   CO_WHITE,
+  LayerIcon,
+  getLayerIconConfig,
+  LAYER_ICON_SIZE_SM,
+  type LayerKey,
 } from '@/constants';
 import { LocationPermissionStatus } from './MapView.types';
 import type { MapViewProps, UserLocation as UserLocationData } from './MapView.types';
-import { useMapLayers } from '@/hooks/useMapLayers';
+import type { MapMarkerData, DmsSign } from '@/types';
+
+/** Work zone overlay color (orange/amber) */
+const WORK_ZONE_COLOR = '#F59E0B';
+
+/** Size of the marker circle on the map */
+const MAP_MARKER_SIZE = 32;
+
+/**
+ * Custom map marker component with circular background and Lucide icon.
+ * DMS signs are dimmed when their displayStatus is "off".
+ * Uses React Native's responder system to properly claim touch events
+ * and prevent the map from intercepting them.
+ */
+const MapMarker: React.FC<{
+  marker: MapMarkerData;
+  onPress: (marker: MapMarkerData) => void;
+}> = ({ marker, onPress }) => {
+  const iconConfig = getLayerIconConfig(marker.layerType as LayerKey);
+  let backgroundColor = iconConfig?.defaultColor ?? CO_BLUE;
+
+  // Special handling for DMS signs - dim when off
+  let opacity = 1;
+  if (marker.layerType === 'dmsSigns') {
+    const dmsSign = marker.rawData as DmsSign;
+    if (dmsSign?.properties?.displayStatus === 'off') {
+      backgroundColor = CO_GRAY;
+      opacity = 0.6;
+    }
+  }
+
+  return (
+    <View
+      // Claim the touch - this tells React Native this view wants to handle the gesture
+      onStartShouldSetResponder={() => {
+        console.log('[MapMarker] onStartShouldSetResponder:', marker.id);
+        return true;
+      }}
+      // Prevent parent from stealing the touch
+      onResponderTerminationRequest={() => {
+        console.log('[MapMarker] onResponderTerminationRequest:', marker.id);
+        return false;
+      }}
+      // Handle the actual press when touch is released
+      onResponderRelease={(event: GestureResponderEvent) => {
+        console.log('[MapMarker] onResponderRelease:', marker.id, marker.layerType);
+        event.stopPropagation();
+        onPress(marker);
+      }}
+      onResponderGrant={() => {
+        console.log('[MapMarker] onResponderGrant:', marker.id);
+      }}
+      style={[styles.markerContainer, { backgroundColor, opacity }]}
+    >
+      <LayerIcon
+        layerKey={marker.layerType as LayerKey}
+        size={LAYER_ICON_SIZE_SM}
+        color={CO_WHITE}
+      />
+    </View>
+  );
+};
 
 /**
  * Full-screen map component with user location tracking.
@@ -123,12 +186,19 @@ export const MapView: React.FC<MapViewProps> = ({
    * Only runs once when initial location is obtained, not on subsequent location updates.
    */
   useEffect(() => {
+    console.log('[MapView] Initial location effect:', {
+      permissionStatus,
+      hasUserLocation: !!userLocation,
+      hasMovedToUserLocation,
+      hasCameraRef: !!cameraRef.current,
+    });
     if (
       permissionStatus === LocationPermissionStatus.GRANTED &&
       userLocation &&
       !hasMovedToUserLocation &&
       cameraRef.current
     ) {
+      console.log('[MapView] Moving camera to user location (initial)');
       cameraRef.current.setCamera({
         centerCoordinate: [userLocation.longitude, userLocation.latitude],
         zoomLevel: DEFAULT_ZOOM_LEVEL,
@@ -146,12 +216,18 @@ export const MapView: React.FC<MapViewProps> = ({
    * Triggered by incrementing centerOnUserTrigger prop.
    */
   useEffect(() => {
+    console.log('[MapView] centerOnUserTrigger effect:', {
+      centerOnUserTrigger,
+      permissionStatus,
+      hasUserLocation: !!userLocation,
+    });
     if (
       centerOnUserTrigger > 0 &&
       permissionStatus === LocationPermissionStatus.GRANTED &&
       userLocation &&
       cameraRef.current
     ) {
+      console.log('[MapView] Moving camera to user location (button press)');
       cameraRef.current.setCamera({
         centerCoordinate: [userLocation.longitude, userLocation.latitude],
         zoomLevel: DEFAULT_ZOOM_LEVEL,
@@ -194,33 +270,31 @@ export const MapView: React.FC<MapViewProps> = ({
   };
 
   /**
-   * Convert markers to GeoJSON FeatureCollection for MapLibre.
-   * Memoized to prevent unnecessary recalculations.
+   * Handle marker press from custom marker component.
+   * Uses setTimeout to defer state update and prevent camera interference.
    */
-  const markersGeoJSON = useMemo(() => {
-    const geoJSON = {
-      type: 'FeatureCollection' as const,
-      features: markers.map((marker) => ({
-        type: 'Feature' as const,
-        id: marker.id,
-        geometry: {
-          type: 'Point' as const,
-          coordinates: [marker.coordinate.longitude, marker.coordinate.latitude],
-        },
-        properties: {
-          id: marker.id,
-          layerType: marker.layerType,
-          title: marker.title,
-          subtitle: marker.subtitle,
-        },
-      })),
-    };
-    console.log('[MapView] Created markersGeoJSON:', {
-      featureCount: geoJSON.features.length,
-      sampleFeature: geoJSON.features[0],
-    });
-    return geoJSON;
-  }, [markers]);
+  const handleMarkerPress = useCallback(
+    (marker: MapMarkerData) => {
+      try {
+        console.log('[MapView] handleMarkerPress called:', marker.id, marker.layerType);
+        console.log('[MapView] onMarkerPress prop exists:', !!onMarkerPress);
+        if (onMarkerPress) {
+          console.log('[MapView] Scheduling onMarkerPress callback...');
+          // Defer the callback to prevent interference with map gestures
+          setTimeout(() => {
+            console.log('[MapView] Executing deferred onMarkerPress...');
+            onMarkerPress(marker);
+            console.log('[MapView] onMarkerPress completed');
+          }, 0);
+        } else {
+          console.log('[MapView] WARNING: onMarkerPress prop is undefined!');
+        }
+      } catch (error) {
+        console.error('[MapView] Error in handleMarkerPress:', error);
+      }
+    },
+    [onMarkerPress]
+  );
 
   /**
    * Convert road condition overlays to GeoJSON FeatureCollection for MapLibre.
@@ -251,23 +325,6 @@ export const MapView: React.FC<MapViewProps> = ({
     });
     return geoJSON;
   }, [overlays]);
-
-  /**
-   * Handle marker press events.
-   */
-  const handleMarkerPress = (event: any): void => {
-    const feature = event?.features?.[0];
-    if (feature) {
-      const markerId = feature.id || feature.properties?.id;
-      const markerData = markers.find((m) => m.id === markerId);
-      if (markerData) {
-        console.log('[MapView] Marker pressed:', markerData.id, markerData.layerType);
-        if (onMarkerPress) {
-          onMarkerPress(markerData);
-        }
-      }
-    }
-  };
 
   /**
    * Handle overlay press events.
@@ -315,12 +372,18 @@ export const MapView: React.FC<MapViewProps> = ({
         />
       )}
 
-      {/* Render road condition overlays (LineStrings above base map roads) */}
-      <ShapeSource id="road-conditions" shape={overlaysGeoJSON} onPress={handleOverlayPress}>
+      {/* Render overlays (road conditions and work zones) */}
+      <ShapeSource id="overlays" shape={overlaysGeoJSON} onPress={handleOverlayPress}>
         <LineLayer
-          id="road-condition-lines"
+          id="overlay-lines"
           style={{
-            lineColor: CO_BLUE,
+            lineColor: [
+              'match',
+              ['get', 'layerType'],
+              'workZone',
+              WORK_ZONE_COLOR,
+              CO_BLUE, // default for roadCondition
+            ],
             lineWidth: 4,
             lineOpacity: 0.8,
             lineCap: 'round',
@@ -329,28 +392,21 @@ export const MapView: React.FC<MapViewProps> = ({
         />
       </ShapeSource>
 
-      {/* Render COtrip markers (incidents, weather stations, snow plows) - above overlays */}
-      <ShapeSource id="cotrip-markers" shape={markersGeoJSON} onPress={handleMarkerPress}>
-        <CircleLayer
-          id="marker-circles"
-          style={{
-            circleRadius: 8,
-            circleColor: [
-              'match',
-              ['get', 'layerType'],
-              'incidents',
-              CO_RED,
-              'weatherStations',
-              CO_BLUE,
-              'snowPlows',
-              CO_GOLD,
-              CO_GRAY,
-            ],
-            circleStrokeWidth: 2,
-            circleStrokeColor: CO_WHITE,
-          }}
-        />
-      </ShapeSource>
+      {/* Render COtrip markers (incidents, weather stations, snow plows, planned events, DMS signs) */}
+      {useMemo(
+        () =>
+          markers.map((marker) => (
+            <MarkerView
+              key={marker.id}
+              coordinate={[marker.coordinate.longitude, marker.coordinate.latitude]}
+              allowOverlap={true}
+              anchor={{ x: 0.5, y: 0.5 }}
+            >
+              <MapMarker marker={marker} onPress={handleMarkerPress} />
+            </MarkerView>
+          )),
+        [markers, handleMarkerPress]
+      )}
     </MLMapView>
   );
 };
@@ -358,5 +414,19 @@ export const MapView: React.FC<MapViewProps> = ({
 const styles = StyleSheet.create({
   map: {
     flex: 1,
+  },
+  markerContainer: {
+    width: MAP_MARKER_SIZE,
+    height: MAP_MARKER_SIZE,
+    borderRadius: MAP_MARKER_SIZE / 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: CO_WHITE,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });

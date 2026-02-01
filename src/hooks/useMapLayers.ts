@@ -13,12 +13,22 @@ import {
   parseIncidentsToMarkers,
   parseWeatherStationsToMarkers,
   parseSnowPlowsToMarkers,
+  parsePlannedEventsToMarkers,
+  parseDmsSignsToMarkers,
+  parseWorkZonesToOverlays,
 } from '@/services/cotripParsers';
 
 /**
  * Layer type identifiers matching COtrip data endpoints
  */
-export type LayerType = 'roadConditions' | 'incidents' | 'weatherStations' | 'snowPlows';
+export type LayerType =
+  | 'roadConditions'
+  | 'incidents'
+  | 'weatherStations'
+  | 'snowPlows'
+  | 'plannedEvents'
+  | 'dmsSigns'
+  | 'workZones';
 
 /**
  * Hook return type
@@ -42,16 +52,23 @@ interface CachedLayerData {
   incidents: MapMarkerData[];
   weatherStations: MapMarkerData[];
   snowPlows: MapMarkerData[];
+  plannedEvents: MapMarkerData[];
+  dmsSigns: MapMarkerData[];
+  workZones: MapOverlayData[];
 }
 
 /**
  * Default enabled state for layers
+ * New layers default to false so they don't load on first launch
  */
 const DEFAULT_ENABLED_LAYERS: Record<LayerType, boolean> = {
   roadConditions: true,
   incidents: true,
   weatherStations: false,
   snowPlows: false,
+  plannedEvents: false,
+  dmsSigns: false,
+  workZones: false,
 };
 
 /**
@@ -80,6 +97,9 @@ export const useMapLayers = (): UseMapLayersResult => {
     incidents: [],
     weatherStations: [],
     snowPlows: [],
+    plannedEvents: [],
+    dmsSigns: [],
+    workZones: [],
   });
 
   // Loading and error states
@@ -113,6 +133,9 @@ export const useMapLayers = (): UseMapLayersResult => {
         incidents: data.incidents.length,
         weatherStations: data.weatherStations.length,
         snowPlows: data.snowPlows.length,
+        plannedEvents: data.plannedEvents.length,
+        dmsSigns: data.dmsSigns.length,
+        workZones: data.workZones.length,
       });
 
       // Parse data into map-ready formats
@@ -121,6 +144,9 @@ export const useMapLayers = (): UseMapLayersResult => {
         incidents: parseIncidentsToMarkers(data.incidents),
         weatherStations: parseWeatherStationsToMarkers(data.weatherStations),
         snowPlows: parseSnowPlowsToMarkers(data.snowPlows),
+        plannedEvents: parsePlannedEventsToMarkers(data.plannedEvents),
+        dmsSigns: parseDmsSignsToMarkers(data.dmsSigns),
+        workZones: parseWorkZonesToOverlays(data.workZones),
       };
 
       console.log('[useMapLayers] Parsed data:', {
@@ -128,6 +154,9 @@ export const useMapLayers = (): UseMapLayersResult => {
         incidents: parsedData.incidents.length,
         weatherStations: parsedData.weatherStations.length,
         snowPlows: parsedData.snowPlows.length,
+        plannedEvents: parsedData.plannedEvents.length,
+        dmsSigns: parsedData.dmsSigns.length,
+        workZones: parsedData.workZones.length,
       });
 
       setCachedData(parsedData);
@@ -160,10 +189,28 @@ export const useMapLayers = (): UseMapLayersResult => {
    * Filters overlays to only include enabled layers
    */
   const filteredOverlays = useMemo((): MapOverlayData[] => {
-    const filtered = enabledLayers.roadConditions ? cachedData.roadConditions : [];
-    console.log('[useMapLayers] Filtered overlays:', filtered.length, 'roadConditions enabled:', enabledLayers.roadConditions);
-    return filtered;
-  }, [enabledLayers.roadConditions, cachedData.roadConditions]);
+    const overlays: MapOverlayData[] = [];
+
+    if (enabledLayers.roadConditions) {
+      overlays.push(...cachedData.roadConditions);
+    }
+    if (enabledLayers.workZones) {
+      overlays.push(...cachedData.workZones);
+    }
+
+    console.log('[useMapLayers] Filtered overlays:', {
+      total: overlays.length,
+      roadConditions: enabledLayers.roadConditions ? cachedData.roadConditions.length : 0,
+      workZones: enabledLayers.workZones ? cachedData.workZones.length : 0,
+    });
+
+    return overlays;
+  }, [
+    enabledLayers.roadConditions,
+    enabledLayers.workZones,
+    cachedData.roadConditions,
+    cachedData.workZones,
+  ]);
 
   /**
    * Filters markers to only include enabled layers
@@ -180,13 +227,20 @@ export const useMapLayers = (): UseMapLayersResult => {
     if (enabledLayers.snowPlows) {
       markers.push(...cachedData.snowPlows);
     }
+    if (enabledLayers.plannedEvents) {
+      markers.push(...cachedData.plannedEvents);
+    }
+    if (enabledLayers.dmsSigns) {
+      markers.push(...cachedData.dmsSigns);
+    }
 
     console.log('[useMapLayers] Filtered markers:', {
       total: markers.length,
       incidents: enabledLayers.incidents ? cachedData.incidents.length : 0,
       weatherStations: enabledLayers.weatherStations ? cachedData.weatherStations.length : 0,
       snowPlows: enabledLayers.snowPlows ? cachedData.snowPlows.length : 0,
-      enabledLayers,
+      plannedEvents: enabledLayers.plannedEvents ? cachedData.plannedEvents.length : 0,
+      dmsSigns: enabledLayers.dmsSigns ? cachedData.dmsSigns.length : 0,
     });
 
     return markers;
@@ -194,9 +248,13 @@ export const useMapLayers = (): UseMapLayersResult => {
     enabledLayers.incidents,
     enabledLayers.weatherStations,
     enabledLayers.snowPlows,
+    enabledLayers.plannedEvents,
+    enabledLayers.dmsSigns,
     cachedData.incidents,
     cachedData.weatherStations,
     cachedData.snowPlows,
+    cachedData.plannedEvents,
+    cachedData.dmsSigns,
   ]);
 
   // Initial data fetch on mount

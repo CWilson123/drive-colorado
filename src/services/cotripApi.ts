@@ -14,6 +14,9 @@ import type {
   Incident,
   WeatherStation,
   SnowPlow,
+  PlannedEvent,
+  DmsSign,
+  WorkZone,
 } from '@/types';
 
 /**
@@ -140,6 +143,93 @@ export const fetchSnowPlows = async (): Promise<SnowPlow[]> => {
 };
 
 /**
+ * Fetches planned events from COtrip API
+ * @returns Array of planned event features, or empty array on error
+ */
+export const fetchPlannedEvents = async (): Promise<PlannedEvent[]> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  try {
+    const response = await fetch(
+      `${COTRIP_BASE_URL}${COTRIP_ENDPOINTS.plannedEvents}?apiKey=${COTRIP_API_KEY}`,
+      { signal: controller.signal }
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.features || [];
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.error('Failed to fetch planned events:', error);
+    return [];
+  }
+};
+
+/**
+ * Fetches DMS (Dynamic Message Signs) from COtrip API
+ * @returns Array of DMS sign features, or empty array on error
+ */
+export const fetchDmsSigns = async (): Promise<DmsSign[]> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  try {
+    const response = await fetch(
+      `${COTRIP_BASE_URL}${COTRIP_ENDPOINTS.dmsSigns}?apiKey=${COTRIP_API_KEY}`,
+      { signal: controller.signal }
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.features || [];
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.error('Failed to fetch DMS signs:', error);
+    return [];
+  }
+};
+
+/**
+ * Fetches work zones from COtrip API (WZDx format)
+ * @returns Array of work zone features, or empty array on error
+ */
+export const fetchWorkZones = async (): Promise<WorkZone[]> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  try {
+    const response = await fetch(
+      `${COTRIP_BASE_URL}${COTRIP_ENDPOINTS.workZones}?apiKey=${COTRIP_API_KEY}`,
+      { signal: controller.signal }
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.features || [];
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.error('Failed to fetch work zones:', error);
+    return [];
+  }
+};
+
+/**
  * Layer data result type for fetchAllLayerData
  */
 export interface LayerDataResult {
@@ -147,6 +237,9 @@ export interface LayerDataResult {
   incidents: Incident[];
   weatherStations: WeatherStation[];
   snowPlows: SnowPlow[];
+  plannedEvents: PlannedEvent[];
+  dmsSigns: DmsSign[];
+  workZones: WorkZone[];
 }
 
 /**
@@ -155,11 +248,22 @@ export interface LayerDataResult {
  */
 export const fetchAllLayerData = async (): Promise<LayerDataResult> => {
   try {
-    const [roadConditions, incidents, weatherStations, snowPlows] = await Promise.all([
+    const [
+      roadConditions,
+      incidents,
+      weatherStations,
+      snowPlows,
+      plannedEvents,
+      dmsSigns,
+      workZones,
+    ] = await Promise.all([
       fetchRoadConditions(),
       fetchIncidents(),
       fetchWeatherStations(),
       fetchSnowPlows(),
+      fetchPlannedEvents(),
+      fetchDmsSigns(),
+      fetchWorkZones(),
     ]);
 
     return {
@@ -167,6 +271,9 @@ export const fetchAllLayerData = async (): Promise<LayerDataResult> => {
       incidents,
       weatherStations,
       snowPlows,
+      plannedEvents,
+      dmsSigns,
+      workZones,
     };
   } catch (error) {
     console.error('Failed to fetch all layer data:', error);
@@ -176,6 +283,9 @@ export const fetchAllLayerData = async (): Promise<LayerDataResult> => {
       incidents: [],
       weatherStations: [],
       snowPlows: [],
+      plannedEvents: [],
+      dmsSigns: [],
+      workZones: [],
     };
   }
 };

@@ -2,7 +2,7 @@ export { Button } from './Button';
 export { MapView } from './Map';
 export { TopBar } from './TopBar';
 export type { TopBarProps } from './TopBar';
-export { LayerDropdown, DEFAULT_MAP_LAYERS } from './LayerDropdown';
+export { LayerDropdown } from './LayerDropdown';
 export type { LayerDropdownProps, MapLayer } from './LayerDropdown';
 export { Drawer } from './Drawer';
 export type { DrawerProps, MenuItem } from './Drawer';

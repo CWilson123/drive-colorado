@@ -112,3 +112,16 @@ export {
   COTRIP_ENDPOINTS,
   CACHE_TTL,
 } from './api';
+
+// Layer icon configuration
+export {
+  LAYER_ICONS,
+  LAYER_ICON_SIZE_SM,
+  LAYER_ICON_SIZE_MD,
+  LAYER_ICON_SIZE_LG,
+  LayerIcon,
+  getLayerIconConfig,
+  type LayerKey,
+  type LayerIconConfig,
+  type LayerIconProps,
+} from './layerIcons';

@@ -40,13 +40,18 @@ import {
   FONT_WEIGHT_BOLD,
   FONT_WEIGHT_MEDIUM,
   Z_INDEX_MODAL,
+  LayerIcon,
+  LAYER_ICON_SIZE_LG,
 } from '@/constants';
 import type {
   MarkerDetailSheetProps,
   SeverityLevel,
   RoadConditionType,
 } from './MarkerDetailSheet.types';
-import type { Incident, WeatherStation, SnowPlow } from '@/types';
+import type { Incident, WeatherStation, SnowPlow, PlannedEvent, DmsSign, WorkZone } from '@/types';
+
+/** Work zone color (orange/amber) */
+const WORK_ZONE_COLOR = '#F59E0B';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = SCREEN_HEIGHT * 0.7; // 70% of screen height
@@ -113,9 +118,27 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
   const scrollOffset = useRef(0);
   const lastGestureY = useRef(0);
 
+  // Log props changes
+  useEffect(() => {
+    console.log('[MarkerDetailSheet] Props changed:', {
+      visible,
+      hasMarker: !!marker,
+      markerId: marker?.id,
+      markerLayerType: marker?.layerType,
+      hasOverlay: !!overlay,
+      overlayId: overlay?.id,
+    });
+  }, [visible, marker, overlay]);
+
   // Open/close animation
   useEffect(() => {
+    console.log('[MarkerDetailSheet] Animation effect triggered:', {
+      visible,
+      hasMarker: !!marker,
+      hasOverlay: !!overlay,
+    });
     if (visible && (marker || overlay)) {
+      console.log('[MarkerDetailSheet] Opening sheet animation...');
       Animated.spring(translateY, {
         toValue: 0,
         damping: 20,
@@ -125,6 +148,7 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
       // Reset drag translation when opening
       dragTranslateY.setValue(0);
     } else {
+      console.log('[MarkerDetailSheet] Closing sheet animation...');
       Animated.spring(translateY, {
         toValue: SHEET_HEIGHT,
         damping: 20,
@@ -234,6 +258,9 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
 
   const renderContent = () => {
     if (overlay) {
+      if (overlay.layerType === 'workZone') {
+        return renderWorkZoneContent(overlay);
+      }
       return renderRoadConditionContent(overlay);
     }
     if (!marker) return null;
@@ -245,6 +272,10 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
         return renderWeatherStationContent(marker);
       case 'snowPlows':
         return renderSnowPlowContent(marker);
+      case 'plannedEvents':
+        return renderPlannedEventContent(marker);
+      case 'dmsSigns':
+        return renderDmsSignContent(marker);
       default:
         return null;
     }
@@ -266,7 +297,7 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
         {/* Header */}
         <View style={[styles.header, { backgroundColor: CO_RED + '15' }]}>
           <View style={[styles.iconCircle, { backgroundColor: CO_RED }]}>
-            <Text style={styles.iconEmoji}>🚨</Text>
+            <LayerIcon layerKey="incidents" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
           </View>
           <View style={styles.headerText}>
             <Text style={styles.title}>{marker.title}</Text>
@@ -344,7 +375,7 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
         {/* Header */}
         <View style={[styles.header, { backgroundColor: CO_BLUE + '15' }]}>
           <View style={[styles.iconCircle, { backgroundColor: CO_BLUE }]}>
-            <Text style={styles.iconEmoji}>🌡️</Text>
+            <LayerIcon layerKey="weatherStations" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
           </View>
           <View style={styles.headerText}>
             <Text style={styles.title}>{marker.title}</Text>
@@ -414,7 +445,7 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
         {/* Header */}
         <View style={[styles.header, { backgroundColor: CO_GOLD + '15' }]}>
           <View style={[styles.iconCircle, { backgroundColor: CO_GOLD }]}>
-            <Text style={styles.iconEmoji}>🚜</Text>
+            <LayerIcon layerKey="snowPlows" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
           </View>
           <View style={styles.headerText}>
             <Text style={styles.title}>CDOT Plow Unit</Text>
@@ -488,7 +519,7 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
         {/* Header */}
         <View style={[styles.header, { backgroundColor: CO_GOLD + '15' }]}>
           <View style={[styles.iconCircle, { backgroundColor: CO_GOLD }]}>
-            <Text style={styles.iconEmoji}>🛣️</Text>
+            <LayerIcon layerKey="roadConditions" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
           </View>
           <View style={styles.headerText}>
             <Text style={styles.title}>{overlay.routeName}</Text>
@@ -519,6 +550,256 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
             </Text>
           </View>
         )}
+      </ScrollView>
+    );
+  };
+
+  const renderPlannedEventContent = (marker: any) => {
+    const event = marker.rawData as PlannedEvent;
+
+    // Format schedule times
+    const formatSchedule = () => {
+      if (!event.properties.schedule || event.properties.schedule.length === 0) {
+        return null;
+      }
+      return event.properties.schedule.map((entry, index) => {
+        const start = new Date(entry.startTime).toLocaleString();
+        const end = new Date(entry.endTime).toLocaleString();
+        return (
+          <View key={index} style={styles.scheduleItem}>
+            <Text style={styles.dataLabel}>SCHEDULE {index + 1}</Text>
+            <Text style={styles.dataValue}>{start}</Text>
+            <Text style={styles.dataValue}>to {end}</Text>
+          </View>
+        );
+      });
+    };
+
+    // Format lane impacts
+    const formatLaneImpacts = () => {
+      if (!event.properties.laneImpacts || event.properties.laneImpacts.length === 0) {
+        return null;
+      }
+      return event.properties.laneImpacts.map((impact, index) => (
+        <View key={index} style={styles.sensorRow}>
+          <Text style={styles.sensorLabel}>
+            {impact.direction}: {impact.laneCount} lane(s)
+          </Text>
+          <Text style={styles.sensorValue}>
+            {impact.closedLaneTypes?.join(', ') || 'N/A'}
+          </Text>
+        </View>
+      ));
+    };
+
+    return (
+      <ScrollView
+        style={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        bounces={scrollOffset.current > 0}
+      >
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: CO_BLUE + '15' }]}>
+          <View style={[styles.iconCircle, { backgroundColor: CO_BLUE }]}>
+            <LayerIcon layerKey="plannedEvents" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
+          </View>
+          <View style={styles.headerText}>
+            <Text style={styles.title}>{event.properties.name || 'Planned Event'}</Text>
+            <Text style={styles.subtitle}>{event.properties.routeName}</Text>
+          </View>
+        </View>
+
+        {/* Type Badge */}
+        <View style={[styles.badge, { backgroundColor: CO_BLUE }]}>
+          <Text style={styles.badgeText}>{(event.properties.type || 'EVENT').toUpperCase()}</Text>
+        </View>
+
+        {/* Project Description */}
+        {event.properties.project?.description && (
+          <View style={[styles.descriptionBlock, { borderLeftColor: CO_BLUE }]}>
+            <Text style={styles.descriptionText}>{event.properties.project.description}</Text>
+          </View>
+        )}
+
+        {/* Traveler Information */}
+        {event.properties.travelerInformationMessage && (
+          <View style={[styles.fullWidthCard, { backgroundColor: CO_GRAY_LIGHT }]}>
+            <Text style={styles.dataLabel}>TRAVELER INFO</Text>
+            <Text style={styles.descriptionText}>{event.properties.travelerInformationMessage}</Text>
+          </View>
+        )}
+
+        {/* Schedule */}
+        {formatSchedule()}
+
+        {/* Lane Impacts */}
+        {event.properties.laneImpacts && event.properties.laneImpacts.length > 0 && (
+          <View style={styles.sensorList}>
+            <Text style={[styles.dataLabel, { marginBottom: SPACING_SM }]}>LANE IMPACTS</Text>
+            {formatLaneImpacts()}
+          </View>
+        )}
+
+        {/* Data Grid */}
+        <View style={styles.dataGrid}>
+          <View style={styles.dataCard}>
+            <Text style={styles.dataLabel}>STATUS</Text>
+            <Text style={styles.dataValue}>{event.properties.project?.status || 'Active'}</Text>
+          </View>
+          <View style={styles.dataCard}>
+            <Text style={styles.dataLabel}>OVERSIZE LOADS</Text>
+            <Text style={styles.dataValue}>
+              {event.properties.isOversizedLoadsProhibited ? 'Prohibited' : 'Allowed'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Footer */}
+        {event.properties.startTime && (
+          <View style={styles.footer}>
+            <Text style={styles.timestamp}>
+              Start: {new Date(event.properties.startTime).toLocaleString()}
+            </Text>
+            {event.properties.clearTime && (
+              <Text style={styles.timestamp}>
+                Clear: {new Date(event.properties.clearTime).toLocaleString()}
+              </Text>
+            )}
+          </View>
+        )}
+      </ScrollView>
+    );
+  };
+
+  const renderDmsSignContent = (marker: any) => {
+    const sign = marker.rawData as DmsSign;
+    const isOn = sign.properties.displayStatus === 'on';
+    const statusColor = isOn ? COLOR_SUCCESS : CO_GRAY;
+
+    return (
+      <ScrollView
+        style={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        bounces={scrollOffset.current > 0}
+      >
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: CO_GOLD + '15' }]}>
+          <View style={[styles.iconCircle, { backgroundColor: isOn ? CO_GOLD : CO_GRAY }]}>
+            <LayerIcon layerKey="dmsSigns" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
+          </View>
+          <View style={styles.headerText}>
+            <Text style={styles.title}>{sign.properties.publicName || sign.properties.name || 'DMS Sign'}</Text>
+            <Text style={styles.subtitle}>{sign.properties.routeName} {sign.properties.direction}</Text>
+          </View>
+        </View>
+
+        {/* Status Badge */}
+        <View style={[styles.badge, { backgroundColor: statusColor }]}>
+          <Text style={styles.badgeText}>{isOn ? 'ACTIVE' : 'OFF'}</Text>
+        </View>
+
+        {/* Current Message (if on and has message) */}
+        {isOn && sign.properties.currentMessage && sign.properties.currentMessage.length > 0 && (
+          <View style={[styles.fullWidthCard, { backgroundColor: CO_GOLD + '15' }]}>
+            <Text style={styles.dataLabel}>CURRENT MESSAGE</Text>
+            {sign.properties.currentMessage.map((line, index) => (
+              <Text key={index} style={[styles.dataValue, { textAlign: 'center' }]}>{line}</Text>
+            ))}
+          </View>
+        )}
+
+        {/* Off message */}
+        {!isOn && (
+          <View style={[styles.descriptionBlock, { borderLeftColor: CO_GRAY }]}>
+            <Text style={styles.descriptionText}>
+              This sign is currently not displaying a message.
+            </Text>
+          </View>
+        )}
+
+        {/* Data Grid */}
+        <View style={styles.dataGrid}>
+          <View style={styles.dataCard}>
+            <Text style={styles.dataLabel}>MILE MARKER</Text>
+            <Text style={styles.dataValue}>{sign.properties.marker || 'N/A'}</Text>
+          </View>
+          <View style={styles.dataCard}>
+            <Text style={styles.dataLabel}>COMM STATUS</Text>
+            <Text style={styles.dataValue}>{sign.properties.communicationStatus || 'Unknown'}</Text>
+          </View>
+        </View>
+
+        {/* Footer */}
+        {sign.properties.lastUpdated && (
+          <View style={styles.footer}>
+            <Text style={styles.timestamp}>
+              Updated: {new Date(sign.properties.lastUpdated).toLocaleString()}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    );
+  };
+
+  const renderWorkZoneContent = (overlay: any) => {
+    const workZone = overlay.rawData as WorkZone;
+    const coreDetails = workZone?.properties?.core_details;
+
+    return (
+      <ScrollView
+        style={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        bounces={scrollOffset.current > 0}
+      >
+        {/* Header */}
+        <View style={[styles.header, { backgroundColor: WORK_ZONE_COLOR + '15' }]}>
+          <View style={[styles.iconCircle, { backgroundColor: WORK_ZONE_COLOR }]}>
+            <LayerIcon layerKey="workZones" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
+          </View>
+          <View style={styles.headerText}>
+            <Text style={styles.title}>{coreDetails?.name || overlay.routeName || 'Work Zone'}</Text>
+            <Text style={styles.subtitle}>Work Zone</Text>
+          </View>
+        </View>
+
+        {/* Event Type Badge */}
+        {coreDetails?.event_type && (
+          <View style={[styles.badge, { backgroundColor: WORK_ZONE_COLOR }]}>
+            <Text style={styles.badgeText}>{coreDetails.event_type.toUpperCase()}</Text>
+          </View>
+        )}
+
+        {/* Condition Strip */}
+        <View style={[styles.conditionStrip, { backgroundColor: WORK_ZONE_COLOR }]} />
+
+        {/* Description */}
+        {(coreDetails?.description || overlay.description) && (
+          <View style={[styles.descriptionBlock, { borderLeftColor: WORK_ZONE_COLOR }]}>
+            <Text style={styles.descriptionText}>
+              {coreDetails?.description || overlay.description}
+            </Text>
+          </View>
+        )}
+
+        {/* Data Grid */}
+        <View style={styles.dataGrid}>
+          <View style={styles.dataCard}>
+            <Text style={styles.dataLabel}>ROAD</Text>
+            <Text style={styles.dataValue}>
+              {coreDetails?.road_names?.join(', ') || overlay.routeName || 'N/A'}
+            </Text>
+          </View>
+          <View style={styles.dataCard}>
+            <Text style={styles.dataLabel}>DIRECTION</Text>
+            <Text style={styles.dataValue}>{coreDetails?.direction || overlay.direction || 'N/A'}</Text>
+          </View>
+        </View>
       </ScrollView>
     );
   };
@@ -645,9 +926,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING_MD,
-  },
-  iconEmoji: {
-    fontSize: 24,
   },
   headerText: {
     flex: 1,
@@ -800,5 +1078,11 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE_SM,
     color: CO_GRAY_DARK,
     textAlign: 'center',
+  },
+  scheduleItem: {
+    backgroundColor: CO_GRAY_LIGHT,
+    padding: SPACING_MD,
+    borderRadius: BORDER_RADIUS_MD,
+    marginBottom: SPACING_SM,
   },
 });

@@ -2,29 +2,21 @@
  * Type definitions for the LayerDropdown component.
  */
 
+import type { LayerKey } from '@/constants';
+
 /**
  * Represents a map layer that can be toggled on/off.
  */
 export interface MapLayer {
   /**
-   * Unique identifier for the layer.
+   * Unique identifier for the layer (must match a LayerKey for icon lookup).
    */
-  id: string;
+  id: LayerKey;
 
   /**
    * Display name for the layer.
    */
   name: string;
-
-  /**
-   * Emoji icon for the layer.
-   */
-  icon: string;
-
-  /**
-   * Background color for the icon container.
-   */
-  iconBackground: string;
 
   /**
    * Whether the layer is currently enabled.

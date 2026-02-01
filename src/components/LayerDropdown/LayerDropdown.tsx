@@ -33,6 +33,9 @@ import {
   FONT_WEIGHT_BOLD,
   FONT_WEIGHT_MEDIUM,
   Z_INDEX_DROPDOWN,
+  LayerIcon,
+  getLayerIconConfig,
+  LAYER_ICON_SIZE_SM,
 } from '@/constants';
 import type { LayerDropdownProps, MapLayer } from './LayerDropdown.types';
 
@@ -43,51 +46,45 @@ const TOP_BAR_HEIGHT = 60;
 /**
  * Available map layers configuration.
  * Matches COtrip data endpoints.
+ * Icons and colors are derived from LayerIcon config via layer id.
+ * Order: Road Conditions, Incidents, Work Zones, Planned Events, Weather Stations, Snow Plows, DMS Signs
  */
 const AVAILABLE_LAYERS: MapLayer[] = [
   {
     id: 'roadConditions',
     name: 'Road Conditions',
-    icon: '🛣️',
-    iconBackground: '#E0F2FE',
     enabled: false, // Will be overridden by enabledLayers prop
   },
   {
     id: 'incidents',
     name: 'Traffic Incidents',
-    icon: '🚨',
-    iconBackground: '#FEE2E2',
+    enabled: false,
+  },
+  {
+    id: 'workZones',
+    name: 'Work Zones',
+    enabled: false,
+  },
+  {
+    id: 'plannedEvents',
+    name: 'Planned Events',
     enabled: false,
   },
   {
     id: 'weatherStations',
     name: 'Weather Stations',
-    icon: '🌡️',
-    iconBackground: '#FFEDD5',
     enabled: false,
   },
   {
     id: 'snowPlows',
     name: 'Snow Plows',
-    icon: '🚜',
-    iconBackground: '#DCFCE7',
     enabled: false,
   },
-  // Commented out - not yet implemented
-  // {
-  //   id: 'trafficCameras',
-  //   name: 'Traffic Cameras',
-  //   icon: '📷',
-  //   iconBackground: '#FCE7F3',
-  //   enabled: false,
-  // },
-  // {
-  //   id: 'weatherAlerts',
-  //   name: 'Weather Alerts',
-  //   icon: '🌦️',
-  //   iconBackground: '#FEF3C7',
-  //   enabled: false,
-  // },
+  {
+    id: 'dmsSigns',
+    name: 'Message Signs',
+    enabled: false,
+  },
 ];
 
 /**
@@ -117,21 +114,26 @@ const formatLastUpdated = (date: Date | null): string => {
 const LayerItem: React.FC<{
   layer: MapLayer;
   onToggle: () => void;
-}> = ({ layer, onToggle }) => (
-  <View style={styles.layerItem}>
-    <View style={[styles.iconContainer, { backgroundColor: layer.iconBackground }]}>
-      <Text style={styles.iconEmoji}>{layer.icon}</Text>
+}> = ({ layer, onToggle }) => {
+  const iconConfig = getLayerIconConfig(layer.id);
+  const backgroundColor = iconConfig?.backgroundColor ?? CO_GRAY_LIGHT;
+
+  return (
+    <View style={styles.layerItem}>
+      <View style={[styles.iconContainer, { backgroundColor }]}>
+        <LayerIcon layerKey={layer.id} size={LAYER_ICON_SIZE_SM} />
+      </View>
+      <Text style={styles.layerName}>{layer.name}</Text>
+      <Switch
+        value={layer.enabled}
+        onValueChange={onToggle}
+        trackColor={{ false: CO_GRAY, true: CO_BLUE }}
+        thumbColor={CO_WHITE}
+        ios_backgroundColor={CO_GRAY}
+      />
     </View>
-    <Text style={styles.layerName}>{layer.name}</Text>
-    <Switch
-      value={layer.enabled}
-      onValueChange={onToggle}
-      trackColor={{ false: CO_GRAY, true: CO_BLUE }}
-      thumbColor={CO_WHITE}
-      ios_backgroundColor={CO_GRAY}
-    />
-  </View>
-);
+  );
+};
 
 /**
  * Dropdown panel for map layer controls.
@@ -310,9 +312,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  iconEmoji: {
-    fontSize: 18,
-  },
   layerName: {
     flex: 1,
     marginLeft: SPACING_SM,
@@ -321,45 +320,3 @@ const styles = StyleSheet.create({
     color: CO_GRAY_DARK,
   },
 });
-
-/**
- * Default map layers configuration.
- * Use this as initial state when implementing the layer system.
- */
-export const DEFAULT_MAP_LAYERS: MapLayer[] = [
-  {
-    id: 'road-conditions',
-    name: 'Road Conditions',
-    icon: '🛣️',
-    iconBackground: '#E0F2FE',
-    enabled: true,
-  },
-  {
-    id: 'traffic-cameras',
-    name: 'Traffic Cameras',
-    icon: '📷',
-    iconBackground: '#FCE7F3',
-    enabled: true,
-  },
-  {
-    id: 'weather-alerts',
-    name: 'Weather Alerts',
-    icon: '🌦️',
-    iconBackground: '#FFEDD5',
-    enabled: true,
-  },
-  {
-    id: 'snowplows',
-    name: 'Snowplows',
-    icon: '🚜',
-    iconBackground: '#DCFCE7',
-    enabled: false,
-  },
-  {
-    id: 'incidents',
-    name: 'Incidents',
-    icon: '🚨',
-    iconBackground: '#FEE2E2',
-    enabled: true,
-  },
-];

@@ -110,6 +110,104 @@ export interface SnowPlow {
 }
 
 /**
+ * Lane impact information for planned events
+ */
+export interface LaneImpact {
+  direction: string;
+  laneCount: number;
+  closedLaneTypes: string[];
+}
+
+/**
+ * Schedule entry for planned events
+ */
+export interface ScheduleEntry {
+  startTime: string;
+  endTime: string;
+}
+
+/**
+ * Project information for planned events
+ */
+export interface ProjectInfo {
+  description: string;
+  status: string;
+}
+
+/**
+ * GeoJSON Feature representing a planned event (MultiPoint geometry)
+ */
+export interface PlannedEvent {
+  type: 'Feature';
+  geometry: {
+    type: 'MultiPoint';
+    coordinates: Array<[number, number]>; // [longitude, latitude]
+  };
+  properties: {
+    id: string;
+    name: string;
+    type: string;
+    routeName: string;
+    startTime: string;
+    clearTime: string;
+    travelerInformationMessage: string;
+    laneImpacts: LaneImpact[];
+    schedule: ScheduleEntry[];
+    project: ProjectInfo;
+    isOversizedLoadsProhibited: boolean;
+  };
+}
+
+/**
+ * GeoJSON Feature representing a DMS (Dynamic Message Sign)
+ */
+export interface DmsSign {
+  type: 'Feature';
+  geometry: {
+    type: 'Point';
+    coordinates: [number, number]; // [longitude, latitude]
+  };
+  properties: {
+    id: string;
+    name: string;
+    publicName: string;
+    routeName: string;
+    direction: string;
+    displayStatus: string; // 'off', 'on', etc.
+    communicationStatus: string; // 'operational', etc.
+    marker: string; // mile marker
+    lastUpdated: string;
+    currentMessage?: string[];
+  };
+}
+
+/**
+ * Core details for WZDx work zone data
+ */
+export interface WorkZoneCoreDetails {
+  name: string;
+  road_names: string[];
+  direction: string;
+  description: string;
+  event_type: string;
+  data_source_id: string;
+}
+
+/**
+ * WZDx (Work Zone Data Exchange) format feature
+ */
+export interface WorkZone {
+  type: 'Feature';
+  geometry: {
+    type: 'LineString' | 'MultiPoint';
+    coordinates: Array<[number, number]>; // [longitude, latitude]
+  };
+  properties: {
+    core_details: WorkZoneCoreDetails;
+  };
+}
+
+/**
  * Unified marker data for rendering points on the map
  */
 export interface MapMarkerData {
@@ -118,23 +216,28 @@ export interface MapMarkerData {
     latitude: number;
     longitude: number;
   };
-  layerType: 'incidents' | 'weatherStations' | 'snowPlows';
+  layerType: 'incidents' | 'weatherStations' | 'snowPlows' | 'plannedEvents' | 'dmsSigns';
   title: string;
   subtitle?: string;
-  rawData: Incident | WeatherStation | SnowPlow;
+  rawData: Incident | WeatherStation | SnowPlow | PlannedEvent | DmsSign;
 }
 
 /**
- * Road condition polyline data for rendering on the map
+ * Road condition / work zone polyline data for rendering on the map
  */
 export interface MapOverlayData {
   id: string;
   coordinates: Array<[number, number]>; // [longitude, latitude]
-  layerType: 'roadCondition';
+  layerType: 'roadCondition' | 'workZone';
   routeName: string;
-  conditions: Array<{
+  conditions?: Array<{
     condition: string;
     timeStamp: string;
   }>;
   color: string;
+  /** Work zone specific fields */
+  description?: string;
+  direction?: string;
+  eventType?: string;
+  rawData?: WorkZone;
 }

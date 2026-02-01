@@ -232,9 +232,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = () => {
    * Handle marker press on map.
    */
   const handleMarkerPress = useCallback((marker: MapMarkerData): void => {
-    console.log('[HomeScreen] Marker pressed, opening detail sheet');
+    console.log('[HomeScreen] handleMarkerPress called');
+    console.log('[HomeScreen] Marker data:', marker.id, marker.layerType, marker.title);
+    console.log('[HomeScreen] Setting selectedMarker state...');
     setSelectedMarker(marker);
     setSelectedOverlay(null); // Clear overlay if switching to marker
+    console.log('[HomeScreen] State updates queued');
   }, []);
 
   /**
