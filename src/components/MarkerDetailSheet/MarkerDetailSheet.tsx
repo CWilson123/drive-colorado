@@ -170,10 +170,20 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
         translationY > DISMISS_THRESHOLD || velocityY > VELOCITY_THRESHOLD;
 
       if (shouldDismiss) {
-        // Dismiss: reset drag offset and call onClose immediately
-        // Let the useEffect handle the closing animation via translateY
-        dragTranslateY.setValue(0);
-        onClose();
+        // Animate the sheet off-screen from its current dragged position
+        // Then call onClose to update state (useEffect will see it's already closed)
+        Animated.spring(dragTranslateY, {
+          toValue: SHEET_HEIGHT,
+          damping: 20,
+          stiffness: 150,
+          useNativeDriver: true,
+        }).start(() => {
+          // Transfer the off-screen position to translateY before resetting dragTranslateY
+          // This prevents a flicker when dragTranslateY resets to 0
+          translateY.setValue(SHEET_HEIGHT);
+          dragTranslateY.setValue(0);
+          onClose();
+        });
       } else {
         // Snap back to open position
         Animated.spring(dragTranslateY, {
