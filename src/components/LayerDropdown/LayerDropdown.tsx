@@ -5,7 +5,7 @@
  * Animates in/out with fade and scale effects.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   Animated,
   TouchableWithoutFeedback,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -21,6 +22,7 @@ import {
   CO_WHITE,
   CO_GRAY,
   CO_GRAY_DARK,
+  CO_GRAY_LIGHT,
   BORDER_RADIUS_LG,
   BORDER_RADIUS_MD,
   SPACING_SM,
@@ -37,6 +39,77 @@ import type { LayerDropdownProps, MapLayer } from './LayerDropdown.types';
 const ANIMATION_DURATION = 200;
 const ICON_SIZE = 36;
 const TOP_BAR_HEIGHT = 60;
+
+/**
+ * Available map layers configuration.
+ * Matches COtrip data endpoints.
+ */
+const AVAILABLE_LAYERS: MapLayer[] = [
+  {
+    id: 'roadConditions',
+    name: 'Road Conditions',
+    icon: '🛣️',
+    iconBackground: '#E0F2FE',
+    enabled: false, // Will be overridden by enabledLayers prop
+  },
+  {
+    id: 'incidents',
+    name: 'Traffic Incidents',
+    icon: '🚨',
+    iconBackground: '#FEE2E2',
+    enabled: false,
+  },
+  {
+    id: 'weatherStations',
+    name: 'Weather Stations',
+    icon: '🌡️',
+    iconBackground: '#FFEDD5',
+    enabled: false,
+  },
+  {
+    id: 'snowPlows',
+    name: 'Snow Plows',
+    icon: '🚜',
+    iconBackground: '#DCFCE7',
+    enabled: false,
+  },
+  // Commented out - not yet implemented
+  // {
+  //   id: 'trafficCameras',
+  //   name: 'Traffic Cameras',
+  //   icon: '📷',
+  //   iconBackground: '#FCE7F3',
+  //   enabled: false,
+  // },
+  // {
+  //   id: 'weatherAlerts',
+  //   name: 'Weather Alerts',
+  //   icon: '🌦️',
+  //   iconBackground: '#FEF3C7',
+  //   enabled: false,
+  // },
+];
+
+/**
+ * Formats last updated time as relative string (e.g., "Updated 2 min ago")
+ */
+const formatLastUpdated = (date: Date | null): string => {
+  if (!date) return 'Never updated';
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMinutes = Math.floor(diffMs / 60000);
+
+  if (diffMinutes < 1) return 'Updated just now';
+  if (diffMinutes === 1) return 'Updated 1 min ago';
+  if (diffMinutes < 60) return `Updated ${diffMinutes} min ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours === 1) return 'Updated 1 hour ago';
+  if (diffHours < 24) return `Updated ${diffHours} hours ago`;
+
+  return 'Updated over 1 day ago';
+};
 
 /**
  * Individual layer item with icon, name, and toggle.
@@ -76,12 +149,30 @@ const LayerItem: React.FC<{
 export const LayerDropdown: React.FC<LayerDropdownProps> = ({
   visible,
   onClose,
-  layers,
+  enabledLayers,
   onToggleLayer,
+  isLoading = false,
+  lastUpdated = null,
 }) => {
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
+
+  // Merge enabled state with layer definitions
+  const layers = useMemo(
+    () =>
+      AVAILABLE_LAYERS.map((layer) => ({
+        ...layer,
+        enabled: enabledLayers[layer.id] ?? false,
+      })),
+    [enabledLayers]
+  );
+
+  // Format last updated time
+  const lastUpdatedText = useMemo(
+    () => formatLastUpdated(lastUpdated),
+    [lastUpdated]
+  );
 
   useEffect(() => {
     if (visible) {
@@ -134,7 +225,13 @@ export const LayerDropdown: React.FC<LayerDropdownProps> = ({
         ]}
       >
         <View style={styles.header}>
-          <Text style={styles.headerText}>MAP LAYERS</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.headerText}>MAP LAYERS</Text>
+            {isLoading && (
+              <ActivityIndicator size="small" color={CO_WHITE} style={styles.loadingIndicator} />
+            )}
+          </View>
+          <Text style={styles.lastUpdatedText}>{lastUpdatedText}</Text>
         </View>
 
         <View style={styles.layerList}>
@@ -177,11 +274,25 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING_SM,
     paddingHorizontal: SPACING_MD,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   headerText: {
     color: CO_WHITE,
     fontSize: FONT_SIZE_XS,
     fontWeight: FONT_WEIGHT_BOLD,
     letterSpacing: 1,
+  },
+  loadingIndicator: {
+    marginLeft: SPACING_SM,
+  },
+  lastUpdatedText: {
+    color: CO_WHITE,
+    fontSize: 10,
+    marginTop: 2,
+    opacity: 0.8,
   },
   layerList: {
     paddingVertical: SPACING_SM,

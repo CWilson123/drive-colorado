@@ -6,9 +6,17 @@
  * are granted. Uses OpenFreeMap Liberty vector tiles for the base map.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { StyleSheet, Alert, Platform } from 'react-native';
-import { MapView as MLMapView, Camera, UserLocation, type CameraRef } from '@maplibre/maplibre-react-native';
+import {
+  MapView as MLMapView,
+  Camera,
+  UserLocation,
+  ShapeSource,
+  CircleLayer,
+  LineLayer,
+  type CameraRef,
+} from '@maplibre/maplibre-react-native';
 import * as ExpoLocation from 'expo-location';
 import {
   DEFAULT_MAP_CENTER,
@@ -16,9 +24,15 @@ import {
   MAX_ZOOM,
   MIN_ZOOM,
   OPENFREEMAP_LIBERTY_STYLE_URL,
+  CO_RED,
+  CO_BLUE,
+  CO_GOLD,
+  CO_GRAY,
+  CO_WHITE,
 } from '@/constants';
 import { LocationPermissionStatus } from './MapView.types';
 import type { MapViewProps, UserLocation as UserLocationData } from './MapView.types';
+import { useMapLayers } from '@/hooks/useMapLayers';
 
 /**
  * Full-screen map component with user location tracking.
@@ -33,13 +47,30 @@ import type { MapViewProps, UserLocation as UserLocationData } from './MapView.t
  * @param props - Component props
  * @returns Rendered map view
  */
-export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError }) => {
+export const MapView: React.FC<MapViewProps> = ({
+  style,
+  onMapReady,
+  onMapError,
+  centerOnUserTrigger = 0,
+  overlays,
+  markers,
+  onMarkerPress,
+  onOverlayPress,
+}) => {
   const cameraRef = useRef<CameraRef>(null);
   const [permissionStatus, setPermissionStatus] = useState<LocationPermissionStatus>(
     LocationPermissionStatus.PENDING
   );
   const [userLocation, setUserLocation] = useState<UserLocationData | null>(null);
   const [hasMovedToUserLocation, setHasMovedToUserLocation] = useState(false);
+
+  // Debug logging - data received as props from HomeScreen
+  useEffect(() => {
+    console.log('[MapView] Received data as props:', {
+      markers: markers.length,
+      overlays: overlays.length,
+    });
+  }, [markers, overlays]);
 
   /**
    * Request location permissions from the user.
@@ -89,6 +120,7 @@ export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError 
 
   /**
    * Center camera on user location once permissions are granted and location is available.
+   * Only runs once when initial location is obtained, not on subsequent location updates.
    */
   useEffect(() => {
     if (
@@ -104,7 +136,29 @@ export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError 
       });
       setHasMovedToUserLocation(true);
     }
-  }, [permissionStatus, userLocation, hasMovedToUserLocation]);
+    // Only run when permission status changes or hasMovedToUserLocation changes
+    // Intentionally NOT including userLocation to prevent re-centering on location updates
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [permissionStatus, hasMovedToUserLocation]);
+
+  /**
+   * Center on user location when MyLocationButton is pressed.
+   * Triggered by incrementing centerOnUserTrigger prop.
+   */
+  useEffect(() => {
+    if (
+      centerOnUserTrigger > 0 &&
+      permissionStatus === LocationPermissionStatus.GRANTED &&
+      userLocation &&
+      cameraRef.current
+    ) {
+      cameraRef.current.setCamera({
+        centerCoordinate: [userLocation.longitude, userLocation.latitude],
+        zoomLevel: DEFAULT_ZOOM_LEVEL,
+        animationDuration: 1000,
+      });
+    }
+  }, [centerOnUserTrigger, permissionStatus, userLocation]);
 
   /**
    * Handle map load completion.
@@ -139,6 +193,99 @@ export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError 
     }
   };
 
+  /**
+   * Convert markers to GeoJSON FeatureCollection for MapLibre.
+   * Memoized to prevent unnecessary recalculations.
+   */
+  const markersGeoJSON = useMemo(() => {
+    const geoJSON = {
+      type: 'FeatureCollection' as const,
+      features: markers.map((marker) => ({
+        type: 'Feature' as const,
+        id: marker.id,
+        geometry: {
+          type: 'Point' as const,
+          coordinates: [marker.coordinate.longitude, marker.coordinate.latitude],
+        },
+        properties: {
+          id: marker.id,
+          layerType: marker.layerType,
+          title: marker.title,
+          subtitle: marker.subtitle,
+        },
+      })),
+    };
+    console.log('[MapView] Created markersGeoJSON:', {
+      featureCount: geoJSON.features.length,
+      sampleFeature: geoJSON.features[0],
+    });
+    return geoJSON;
+  }, [markers]);
+
+  /**
+   * Convert road condition overlays to GeoJSON FeatureCollection for MapLibre.
+   * Memoized to prevent unnecessary recalculations.
+   * Note: Road conditions can contain thousands of coordinate points across all segments.
+   */
+  const overlaysGeoJSON = useMemo(() => {
+    const geoJSON = {
+      type: 'FeatureCollection' as const,
+      features: overlays.map((overlay) => ({
+        type: 'Feature' as const,
+        id: overlay.id,
+        geometry: {
+          type: 'LineString' as const,
+          coordinates: overlay.coordinates,
+        },
+        properties: {
+          id: overlay.id,
+          routeName: overlay.routeName,
+          color: overlay.color,
+          layerType: overlay.layerType,
+        },
+      })),
+    };
+    console.log('[MapView] Created overlaysGeoJSON:', {
+      featureCount: geoJSON.features.length,
+      sampleFeature: geoJSON.features[0],
+    });
+    return geoJSON;
+  }, [overlays]);
+
+  /**
+   * Handle marker press events.
+   */
+  const handleMarkerPress = (event: any): void => {
+    const feature = event?.features?.[0];
+    if (feature) {
+      const markerId = feature.id || feature.properties?.id;
+      const markerData = markers.find((m) => m.id === markerId);
+      if (markerData) {
+        console.log('[MapView] Marker pressed:', markerData.id, markerData.layerType);
+        if (onMarkerPress) {
+          onMarkerPress(markerData);
+        }
+      }
+    }
+  };
+
+  /**
+   * Handle overlay press events.
+   */
+  const handleOverlayPress = (event: any): void => {
+    const feature = event?.features?.[0];
+    if (feature) {
+      const overlayId = feature.id || feature.properties?.id;
+      const overlayData = overlays.find((o) => o.id === overlayId);
+      if (overlayData) {
+        console.log('[MapView] Overlay pressed:', overlayData.id);
+        if (onOverlayPress) {
+          onOverlayPress(overlayData);
+        }
+      }
+    }
+  };
+
   return (
     <MLMapView
       style={[styles.map, style]}
@@ -167,6 +314,43 @@ export const MapView: React.FC<MapViewProps> = ({ style, onMapReady, onMapError 
           onUpdate={handleLocationUpdate}
         />
       )}
+
+      {/* Render road condition overlays (LineStrings above base map roads) */}
+      <ShapeSource id="road-conditions" shape={overlaysGeoJSON} onPress={handleOverlayPress}>
+        <LineLayer
+          id="road-condition-lines"
+          style={{
+            lineColor: CO_BLUE,
+            lineWidth: 4,
+            lineOpacity: 0.8,
+            lineCap: 'round',
+            lineJoin: 'round',
+          }}
+        />
+      </ShapeSource>
+
+      {/* Render COtrip markers (incidents, weather stations, snow plows) - above overlays */}
+      <ShapeSource id="cotrip-markers" shape={markersGeoJSON} onPress={handleMarkerPress}>
+        <CircleLayer
+          id="marker-circles"
+          style={{
+            circleRadius: 8,
+            circleColor: [
+              'match',
+              ['get', 'layerType'],
+              'incidents',
+              CO_RED,
+              'weatherStations',
+              CO_BLUE,
+              'snowPlows',
+              CO_GOLD,
+              CO_GRAY,
+            ],
+            circleStrokeWidth: 2,
+            circleStrokeColor: CO_WHITE,
+          }}
+        />
+      </ShapeSource>
     </MLMapView>
   );
 };

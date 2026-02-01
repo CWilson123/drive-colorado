@@ -47,12 +47,22 @@ export interface LayerDropdownProps {
   onClose: () => void;
 
   /**
-   * Array of map layers to display.
+   * Record of enabled layer states.
    */
-  layers: MapLayer[];
+  enabledLayers: Record<string, boolean>;
 
   /**
    * Callback fired when a layer toggle is pressed.
    */
   onToggleLayer: (id: string) => void;
+
+  /**
+   * Whether layer data is currently loading.
+   */
+  isLoading?: boolean;
+
+  /**
+   * Timestamp of last data update.
+   */
+  lastUpdated?: Date | null;
 }

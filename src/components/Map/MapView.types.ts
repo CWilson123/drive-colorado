@@ -3,6 +3,7 @@
  */
 
 import type { ViewStyle } from 'react-native';
+import type { MapOverlayData, MapMarkerData } from '@/types';
 
 /**
  * Props for the MapView component.
@@ -22,6 +23,32 @@ export interface MapViewProps {
    * Callback fired when there's an error loading the map.
    */
   onMapError?: (error: Error) => void;
+
+  /**
+   * Trigger to center map on user location.
+   * Increment this value to trigger re-centering.
+   */
+  centerOnUserTrigger?: number;
+
+  /**
+   * Overlay data (road conditions) to render on the map.
+   */
+  overlays: MapOverlayData[];
+
+  /**
+   * Marker data (incidents, weather stations, snow plows) to render on the map.
+   */
+  markers: MapMarkerData[];
+
+  /**
+   * Callback fired when a marker is tapped.
+   */
+  onMarkerPress?: (marker: MapMarkerData) => void;
+
+  /**
+   * Callback fired when a road condition overlay is tapped.
+   */
+  onOverlayPress?: (overlay: MapOverlayData) => void;
 }
 
 /**

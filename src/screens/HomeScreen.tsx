@@ -5,8 +5,8 @@
  * interactive map with overlay UI components for navigation and information.
  */
 
-import React, { useState, useCallback } from 'react';
-import { StyleSheet, View, TouchableWithoutFeedback } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import {
@@ -17,9 +17,13 @@ import {
   MyLocationButton,
   BottomInfoBar,
   AboutModal,
-  DEFAULT_MAP_LAYERS,
+  LoadingOverlay,
+  ErrorToast,
+  MarkerDetailSheet,
 } from '@/components';
-import type { MapLayer, StatusLevel } from '@/components';
+import type { StatusLevel } from '@/components';
+import { useMapLayers } from '@/hooks/useMapLayers';
+import type { MapMarkerData, MapOverlayData } from '@/types';
 
 /**
  * Selected info data for the bottom bar.
@@ -51,6 +55,18 @@ interface HomeScreenProps {
  * @returns Rendered home screen
  */
 export const HomeScreen: React.FC<HomeScreenProps> = () => {
+  // Get layer data from useMapLayers hook
+  const {
+    markers,
+    overlays,
+    enabledLayers,
+    isLoading,
+    lastUpdated,
+    error,
+    toggleLayer,
+    refreshData,
+  } = useMapLayers();
+
   // Map state
   const [isMapReady, setIsMapReady] = useState<boolean>(false);
 
@@ -59,10 +75,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = () => {
   const [isLayerDropdownOpen, setIsLayerDropdownOpen] = useState<boolean>(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState<boolean>(false);
 
-  // Layer state
-  const [layers, setLayers] = useState<MapLayer[]>(DEFAULT_MAP_LAYERS);
+  // Loading and error state
+  const [showInitialLoading, setShowInitialLoading] = useState<boolean>(true);
+  const [showErrorToast, setShowErrorToast] = useState<boolean>(false);
 
-  // Selected feature state (mock data for testing)
+  // Map control state
+  const [centerOnUserTrigger, setCenterOnUserTrigger] = useState<number>(0);
+
+  // Selected marker/overlay state for detail sheet
+  const [selectedMarker, setSelectedMarker] = useState<MapMarkerData | null>(null);
+  const [selectedOverlay, setSelectedOverlay] = useState<MapOverlayData | null>(null);
+
+  // Selected feature state (mock data for testing - kept for BottomInfoBar)
   const [selectedInfo, setSelectedInfo] = useState<SelectedInfo | null>({
     title: 'I-70 Westbound',
     subtitle: 'Clear conditions - No delays',
@@ -133,20 +157,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = () => {
    * Toggle a layer's enabled state.
    */
   const handleToggleLayer = useCallback((id: string): void => {
-    setLayers((prev) =>
-      prev.map((layer) =>
-        layer.id === id ? { ...layer, enabled: !layer.enabled } : layer
-      )
-    );
-  }, []);
+    toggleLayer(id as any); // Cast to LayerType
+  }, [toggleLayer]);
 
   /**
    * Handle my location button press.
    */
   const handleMyLocationPress = useCallback((): void => {
     closeOverlays();
-    // TODO: Trigger map to center on user location
-    console.log('Center on my location');
+    // Trigger map to center on user location by incrementing the trigger
+    setCenterOnUserTrigger((prev) => prev + 1);
   }, [closeOverlays]);
 
   /**
@@ -193,21 +213,83 @@ export const HomeScreen: React.FC<HomeScreenProps> = () => {
     console.log('Feedback pressed');
   }, [handleDrawerClose]);
 
+  /**
+   * Handle error toast retry action.
+   */
+  const handleErrorRetry = useCallback(async (): Promise<void> => {
+    setShowErrorToast(false);
+    await refreshData();
+  }, [refreshData]);
+
+  /**
+   * Dismiss error toast.
+   */
+  const handleErrorDismiss = useCallback((): void => {
+    setShowErrorToast(false);
+  }, []);
+
+  /**
+   * Handle marker press on map.
+   */
+  const handleMarkerPress = useCallback((marker: MapMarkerData): void => {
+    console.log('[HomeScreen] Marker pressed, opening detail sheet');
+    setSelectedMarker(marker);
+    setSelectedOverlay(null); // Clear overlay if switching to marker
+  }, []);
+
+  /**
+   * Handle overlay press on map.
+   */
+  const handleOverlayPress = useCallback((overlay: MapOverlayData): void => {
+    console.log('[HomeScreen] Overlay pressed, opening detail sheet');
+    setSelectedOverlay(overlay);
+    setSelectedMarker(null); // Clear marker if switching to overlay
+  }, []);
+
+  /**
+   * Close marker detail sheet.
+   */
+  const handleDetailSheetClose = useCallback((): void => {
+    setSelectedMarker(null);
+    setSelectedOverlay(null);
+  }, []);
+
+  /**
+   * Hide initial loading overlay once data loads.
+   */
+  useEffect(() => {
+    if (lastUpdated && showInitialLoading) {
+      setShowInitialLoading(false);
+    }
+  }, [lastUpdated, showInitialLoading]);
+
+  /**
+   * Show error toast when error occurs.
+   */
+  useEffect(() => {
+    if (error && !isLoading) {
+      setShowErrorToast(true);
+    }
+  }, [error, isLoading]);
+
   return (
     <SafeAreaProvider>
       <View style={styles.container}>
         <StatusBar style="dark" />
 
         {/* Full-screen map (bottom layer) */}
-        <TouchableWithoutFeedback onPress={handleMapPress}>
-          <View style={styles.mapContainer}>
-            <MapView
-              style={styles.map}
-              onMapReady={handleMapReady}
-              onMapError={handleMapError}
-            />
-          </View>
-        </TouchableWithoutFeedback>
+        <View style={styles.mapContainer}>
+          <MapView
+            style={styles.map}
+            onMapReady={handleMapReady}
+            onMapError={handleMapError}
+            centerOnUserTrigger={centerOnUserTrigger}
+            overlays={overlays}
+            markers={markers}
+            onMarkerPress={handleMarkerPress}
+            onOverlayPress={handleOverlayPress}
+          />
+        </View>
 
         {/* Bottom Info Bar */}
         <BottomInfoBar
@@ -233,8 +315,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = () => {
         <LayerDropdown
           visible={isLayerDropdownOpen}
           onClose={handleLayerDropdownClose}
-          layers={layers}
+          enabledLayers={enabledLayers}
           onToggleLayer={handleToggleLayer}
+          isLoading={isLoading}
+          lastUpdated={lastUpdated}
         />
 
         {/* Navigation Drawer (top layer) */}
@@ -250,6 +334,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = () => {
         <AboutModal
           visible={isAboutModalOpen}
           onClose={handleAboutModalClose}
+        />
+
+        {/* Loading Overlay (initial data load) */}
+        <LoadingOverlay
+          visible={showInitialLoading && isLoading}
+          message="Loading map data..."
+        />
+
+        {/* Error Toast (data fetch failures) */}
+        <ErrorToast
+          visible={showErrorToast}
+          message={error || 'Failed to load data'}
+          onPress={handleErrorRetry}
+          onDismiss={handleErrorDismiss}
+        />
+
+        {/* Marker Detail Sheet */}
+        <MarkerDetailSheet
+          visible={!!(selectedMarker || selectedOverlay)}
+          marker={selectedMarker}
+          overlay={selectedOverlay}
+          onClose={handleDetailSheetClose}
         />
       </View>
     </SafeAreaProvider>

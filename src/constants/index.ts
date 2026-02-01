@@ -104,3 +104,11 @@ export {
   MY_LOCATION_BUTTON_SHADOW_RADIUS,
   MY_LOCATION_BUTTON_ELEVATION,
 } from './layout';
+
+// API configuration constants
+export {
+  COTRIP_API_KEY,
+  COTRIP_BASE_URL,
+  COTRIP_ENDPOINTS,
+  CACHE_TTL,
+} from './api';
