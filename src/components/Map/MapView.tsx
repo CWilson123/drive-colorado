@@ -7,14 +7,14 @@
  */
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { StyleSheet, Alert, Platform, View, GestureResponderEvent } from 'react-native';
+import { StyleSheet, Alert, Platform } from 'react-native';
 import {
   MapView as MLMapView,
   Camera,
   UserLocation,
   ShapeSource,
   LineLayer,
-  MarkerView,
+  CircleLayer,
   type CameraRef,
 } from '@maplibre/maplibre-react-native';
 import * as ExpoLocation from 'expo-location';
@@ -26,11 +26,8 @@ import {
   OPENFREEMAP_LIBERTY_STYLE_URL,
   CO_BLUE,
   CO_GRAY,
-  CO_WHITE,
-  LayerIcon,
-  getLayerIconConfig,
-  LAYER_ICON_SIZE_SM,
-  type LayerKey,
+  CO_RED,
+  CO_GOLD,
 } from '@/constants';
 import { LocationPermissionStatus } from './MapView.types';
 import type { MapViewProps, UserLocation as UserLocationData } from './MapView.types';
@@ -39,62 +36,22 @@ import type { MapMarkerData, DmsSign } from '@/types';
 /** Work zone overlay color (orange/amber) */
 const WORK_ZONE_COLOR = '#F59E0B';
 
-/** Size of the marker circle on the map */
-const MAP_MARKER_SIZE = 32;
+/** Marker circle radius on the map */
+const MARKER_CIRCLE_RADIUS = 10;
+
+/** Marker stroke width */
+const MARKER_STROKE_WIDTH = 2;
 
 /**
- * Custom map marker component with circular background and Lucide icon.
- * DMS signs are dimmed when their displayStatus is "off".
- * Uses React Native's responder system to properly claim touch events
- * and prevent the map from intercepting them.
+ * Color mapping for each marker layer type.
+ * Used for CircleLayer data-driven styling.
  */
-const MapMarker: React.FC<{
-  marker: MapMarkerData;
-  onPress: (marker: MapMarkerData) => void;
-}> = ({ marker, onPress }) => {
-  const iconConfig = getLayerIconConfig(marker.layerType as LayerKey);
-  let backgroundColor = iconConfig?.defaultColor ?? CO_BLUE;
-
-  // Special handling for DMS signs - dim when off
-  let opacity = 1;
-  if (marker.layerType === 'dmsSigns') {
-    const dmsSign = marker.rawData as DmsSign;
-    if (dmsSign?.properties?.displayStatus === 'off') {
-      backgroundColor = CO_GRAY;
-      opacity = 0.6;
-    }
-  }
-
-  return (
-    <View
-      // Claim the touch - this tells React Native this view wants to handle the gesture
-      onStartShouldSetResponder={() => {
-        console.log('[MapMarker] onStartShouldSetResponder:', marker.id);
-        return true;
-      }}
-      // Prevent parent from stealing the touch
-      onResponderTerminationRequest={() => {
-        console.log('[MapMarker] onResponderTerminationRequest:', marker.id);
-        return false;
-      }}
-      // Handle the actual press when touch is released
-      onResponderRelease={(event: GestureResponderEvent) => {
-        console.log('[MapMarker] onResponderRelease:', marker.id, marker.layerType);
-        event.stopPropagation();
-        onPress(marker);
-      }}
-      onResponderGrant={() => {
-        console.log('[MapMarker] onResponderGrant:', marker.id);
-      }}
-      style={[styles.markerContainer, { backgroundColor, opacity }]}
-    >
-      <LayerIcon
-        layerKey={marker.layerType as LayerKey}
-        size={LAYER_ICON_SIZE_SM}
-        color={CO_WHITE}
-      />
-    </View>
-  );
+const MARKER_COLORS: Record<string, string> = {
+  incidents: CO_RED,
+  weatherStations: CO_BLUE,
+  snowPlows: CO_GOLD,
+  plannedEvents: '#6366F1', // Indigo - distinct from weatherStations
+  dmsSigns: '#F59E0B', // Amber/Orange
 };
 
 /**
@@ -270,30 +227,71 @@ export const MapView: React.FC<MapViewProps> = ({
   };
 
   /**
-   * Handle marker press from custom marker component.
-   * Uses setTimeout to defer state update and prevent camera interference.
+   * Convert markers to GeoJSON FeatureCollection for native CircleLayer rendering.
+   * This ensures markers are rendered by the GL engine and don't drift during panning.
+   */
+  const markersGeoJSON = useMemo(() => {
+    const features = markers.map((marker) => {
+      // Check if DMS sign is off (dimmed)
+      let isDimmed = false;
+      if (marker.layerType === 'dmsSigns') {
+        const dmsSign = marker.rawData as DmsSign;
+        if (dmsSign?.properties?.displayStatus === 'off') {
+          isDimmed = true;
+        }
+      }
+
+      return {
+        type: 'Feature' as const,
+        id: marker.id,
+        geometry: {
+          type: 'Point' as const,
+          coordinates: [marker.coordinate.longitude, marker.coordinate.latitude],
+        },
+        properties: {
+          id: marker.id,
+          layerType: marker.layerType,
+          title: marker.title,
+          isDimmed,
+        },
+      };
+    });
+
+    console.log('[MapView] Created markersGeoJSON:', {
+      featureCount: features.length,
+    });
+
+    return {
+      type: 'FeatureCollection' as const,
+      features,
+    };
+  }, [markers]);
+
+  /**
+   * Handle marker press from ShapeSource onPress event.
+   * Finds the corresponding marker data and calls the callback.
    */
   const handleMarkerPress = useCallback(
-    (marker: MapMarkerData) => {
-      try {
-        console.log('[MapView] handleMarkerPress called:', marker.id, marker.layerType);
-        console.log('[MapView] onMarkerPress prop exists:', !!onMarkerPress);
+    (event: any) => {
+      const feature = event?.features?.[0];
+      if (!feature) {
+        console.log('[MapView] handleMarkerPress: No feature in event');
+        return;
+      }
+
+      const markerId = feature.id || feature.properties?.id;
+      const markerData = markers.find((m) => m.id === markerId);
+
+      if (markerData) {
+        console.log('[MapView] Marker pressed:', markerData.id, markerData.layerType);
         if (onMarkerPress) {
-          console.log('[MapView] Scheduling onMarkerPress callback...');
-          // Defer the callback to prevent interference with map gestures
-          setTimeout(() => {
-            console.log('[MapView] Executing deferred onMarkerPress...');
-            onMarkerPress(marker);
-            console.log('[MapView] onMarkerPress completed');
-          }, 0);
-        } else {
-          console.log('[MapView] WARNING: onMarkerPress prop is undefined!');
+          onMarkerPress(markerData);
         }
-      } catch (error) {
-        console.error('[MapView] Error in handleMarkerPress:', error);
+      } else {
+        console.log('[MapView] handleMarkerPress: Marker not found for id:', markerId);
       }
     },
-    [onMarkerPress]
+    [markers, onMarkerPress]
   );
 
   /**
@@ -392,21 +390,35 @@ export const MapView: React.FC<MapViewProps> = ({
         />
       </ShapeSource>
 
-      {/* Render COtrip markers (incidents, weather stations, snow plows, planned events, DMS signs) */}
-      {useMemo(
-        () =>
-          markers.map((marker) => (
-            <MarkerView
-              key={marker.id}
-              coordinate={[marker.coordinate.longitude, marker.coordinate.latitude]}
-              allowOverlap={true}
-              anchor={{ x: 0.5, y: 0.5 }}
-            >
-              <MapMarker marker={marker} onPress={handleMarkerPress} />
-            </MarkerView>
-          )),
-        [markers, handleMarkerPress]
-      )}
+      {/* Render COtrip markers using native CircleLayer for smooth panning */}
+      <ShapeSource id="markers" shape={markersGeoJSON} onPress={handleMarkerPress}>
+        <CircleLayer
+          id="marker-circles"
+          style={{
+            circleRadius: MARKER_CIRCLE_RADIUS,
+            circleColor: [
+              'match',
+              ['get', 'layerType'],
+              'incidents',
+              MARKER_COLORS.incidents,
+              'weatherStations',
+              MARKER_COLORS.weatherStations,
+              'snowPlows',
+              MARKER_COLORS.snowPlows,
+              'plannedEvents',
+              MARKER_COLORS.plannedEvents,
+              'dmsSigns',
+              MARKER_COLORS.dmsSigns,
+              CO_BLUE, // default
+            ],
+            circleStrokeWidth: MARKER_STROKE_WIDTH,
+            circleStrokeColor: '#FFFFFF',
+            // Dim DMS signs that are off
+            circleOpacity: ['case', ['get', 'isDimmed'], 0.5, 1],
+            circleStrokeOpacity: ['case', ['get', 'isDimmed'], 0.5, 1],
+          }}
+        />
+      </ShapeSource>
     </MLMapView>
   );
 };
@@ -414,19 +426,5 @@ export const MapView: React.FC<MapViewProps> = ({
 const styles = StyleSheet.create({
   map: {
     flex: 1,
-  },
-  markerContainer: {
-    width: MAP_MARKER_SIZE,
-    height: MAP_MARKER_SIZE,
-    borderRadius: MAP_MARKER_SIZE / 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: CO_WHITE,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
   },
 });
