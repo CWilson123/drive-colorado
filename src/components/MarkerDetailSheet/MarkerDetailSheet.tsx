@@ -170,17 +170,10 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
         translationY > DISMISS_THRESHOLD || velocityY > VELOCITY_THRESHOLD;
 
       if (shouldDismiss) {
-        // Dismiss: animate to off-screen, then call onClose
-        Animated.spring(dragTranslateY, {
-          toValue: SHEET_HEIGHT,
-          damping: 22,
-          stiffness: 180,
-          mass: 0.7,
-          useNativeDriver: true,
-        }).start(() => {
-          dragTranslateY.setValue(0);
-          onClose();
-        });
+        // Dismiss: reset drag offset and call onClose immediately
+        // Let the useEffect handle the closing animation via translateY
+        dragTranslateY.setValue(0);
+        onClose();
       } else {
         // Snap back to open position
         Animated.spring(dragTranslateY, {
@@ -198,17 +191,10 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
    * Handle X button and backdrop dismiss
    */
   const handleClose = () => {
-    // Animate to off-screen, then call onClose
-    Animated.spring(dragTranslateY, {
-      toValue: SHEET_HEIGHT,
-      damping: 22,
-      stiffness: 180,
-      mass: 0.7,
-      useNativeDriver: true,
-    }).start(() => {
-      dragTranslateY.setValue(0);
-      onClose();
-    });
+    // Reset drag offset and call onClose immediately
+    // Let the useEffect handle the closing animation via translateY
+    dragTranslateY.setValue(0);
+    onClose();
   };
 
   /**
