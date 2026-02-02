@@ -22,9 +22,7 @@ import {
   CO_WHITE,
   CO_GRAY,
   CO_GRAY_DARK,
-  CO_GRAY_LIGHT,
   BORDER_RADIUS_LG,
-  BORDER_RADIUS_MD,
   SPACING_SM,
   SPACING_MD,
   SPACING_LG,
@@ -34,13 +32,11 @@ import {
   FONT_WEIGHT_MEDIUM,
   Z_INDEX_DROPDOWN,
   LayerIcon,
-  getLayerIconConfig,
-  LAYER_ICON_SIZE_SM,
+  LAYER_DROPDOWN_ICON_SIZE,
 } from '@/constants';
 import type { LayerDropdownProps, MapLayer } from './LayerDropdown.types';
 
 const ANIMATION_DURATION = 200;
-const ICON_SIZE = 36;
 const TOP_BAR_HEIGHT = 60;
 
 /**
@@ -115,13 +111,10 @@ const LayerItem: React.FC<{
   layer: MapLayer;
   onToggle: () => void;
 }> = ({ layer, onToggle }) => {
-  const iconConfig = getLayerIconConfig(layer.id);
-  const backgroundColor = iconConfig?.backgroundColor ?? CO_GRAY_LIGHT;
-
   return (
     <View style={styles.layerItem}>
-      <View style={[styles.iconContainer, { backgroundColor }]}>
-        <LayerIcon layerKey={layer.id} size={LAYER_ICON_SIZE_SM} />
+      <View style={styles.iconContainer}>
+        <LayerIcon layerKey={layer.id} size={LAYER_DROPDOWN_ICON_SIZE} />
       </View>
       <Text style={styles.layerName}>{layer.name}</Text>
       <Switch
@@ -142,7 +135,7 @@ const LayerItem: React.FC<{
  * - Positioned below top bar on right side
  * - Animated fade and scale transitions
  * - Blue header with "MAP LAYERS" title
- * - List of toggleable layers with emoji icons
+ * - List of toggleable layers with map icons
  * - Tap outside to close
  *
  * @param props - Component props
@@ -306,9 +299,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING_MD,
   },
   iconContainer: {
-    width: ICON_SIZE,
-    height: ICON_SIZE,
-    borderRadius: BORDER_RADIUS_MD,
+    width: LAYER_DROPDOWN_ICON_SIZE,
+    height: LAYER_DROPDOWN_ICON_SIZE,
     justifyContent: 'center',
     alignItems: 'center',
   },
