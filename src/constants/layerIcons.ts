@@ -84,10 +84,10 @@ export const LAYER_ICONS: Record<LayerKey, LayerIconConfig> = {
 /**
  * Default icon size used across the app for consistency.
  */
-export const LAYER_ICON_SIZE_SM = 18;
-export const LAYER_ICON_SIZE_MD = 24;
-export const LAYER_ICON_SIZE_LG = 28;
-export const MAP_MARKER_ICON_SCALE = 0.6;
+export const LAYER_ICON_SIZE_SM = 32;
+export const LAYER_ICON_SIZE_MD = 64;
+export const LAYER_ICON_SIZE_LG = 96;
+export const MAP_MARKER_ICON_SCALE = 0.9;
 export const MAP_MARKER_ICON_ANCHOR = 'center';
 export const MAP_MARKER_DIMMED_OPACITY = 0.5;
 
