@@ -32,7 +32,7 @@ import {
   FONT_WEIGHT_MEDIUM,
   Z_INDEX_DROPDOWN,
   LayerIcon,
-  LAYER_ICON_SIZE_MD,
+  LAYER_DROPDOWN_ICON_SIZE,
 } from '@/constants';
 import type { LayerDropdownProps, MapLayer } from './LayerDropdown.types';
 
@@ -114,7 +114,7 @@ const LayerItem: React.FC<{
   return (
     <View style={styles.layerItem}>
       <View style={styles.iconContainer}>
-        <LayerIcon layerKey={layer.id} size={LAYER_ICON_SIZE_MD} />
+        <LayerIcon layerKey={layer.id} size={LAYER_DROPDOWN_ICON_SIZE} />
       </View>
       <Text style={styles.layerName}>{layer.name}</Text>
       <Switch
@@ -299,8 +299,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING_MD,
   },
   iconContainer: {
-    width: LAYER_ICON_SIZE_MD,
-    height: LAYER_ICON_SIZE_MD,
+    width: LAYER_DROPDOWN_ICON_SIZE,
+    height: LAYER_DROPDOWN_ICON_SIZE,
     justifyContent: 'center',
     alignItems: 'center',
   },

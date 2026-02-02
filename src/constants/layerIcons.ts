@@ -87,6 +87,7 @@ export const LAYER_ICONS: Record<LayerKey, LayerIconConfig> = {
 export const LAYER_ICON_SIZE_SM = 32;
 export const LAYER_ICON_SIZE_MD = 64;
 export const LAYER_ICON_SIZE_LG = 96;
+export const LAYER_DROPDOWN_ICON_SIZE = 52;
 export const MAP_MARKER_ICON_SCALE = 0.9;
 export const MAP_MARKER_ICON_ANCHOR = 'center';
 export const MAP_MARKER_DIMMED_OPACITY = 0.5;
