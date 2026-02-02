@@ -142,7 +142,7 @@ const LayerItem: React.FC<{
  * - Positioned below top bar on right side
  * - Animated fade and scale transitions
  * - Blue header with "MAP LAYERS" title
- * - List of toggleable layers with emoji icons
+ * - List of toggleable layers with map icons
  * - Tap outside to close
  *
  * @param props - Component props
