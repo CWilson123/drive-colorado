@@ -1,59 +1,43 @@
 # Drive Colorado - Source Code Structure
 
+#metadata
+- type: folder
+- related: src/components/README.md, src/constants/README.md, src/hooks/README.md, src/screens/README.md, src/services/README.md, src/types/README.md
+- last_updated: 2026-02-02
+- tags: structure, source, organization
+#end-metadata
+
+## Purpose
 This directory contains the main source code for the Drive Colorado app.
 
-## Folder Structure
+## Dependencies
+- **Internal**: None
+- **External**: React Native 0.81.5, React 19.1.0, Expo ~54.0.32
 
-### `/components`
-Reusable UI components used throughout the app.
-- Button components
-- Card components
-- Form inputs
-- Headers, footers, etc.
+## Directory Structure
 
-### `/screens`
-Main screen components for different app views.
-- Home screen
-- Map screen
-- Details screens
-- Settings screen
+| Directory | Purpose | Documentation |
+|-----------|---------|----------------|
+| `/components` | Reusable UI components | [components/README.md](components/README.md) |
+| `/constants` | App-wide configuration and constants | [constants/README.md](constants/README.md) |
+| `/hooks` | Custom React hooks | [hooks/README.md](hooks/README.md) |
+| `/screens` | Main screen components | [screens/README.md](screens/README.md) |
+| `/services` | API integrations and business logic | [services/README.md](services/README.md) |
+| `/types` | TypeScript type definitions | [types/README.md](types/README.md) |
+| `/assets` | Static assets (images, icons) | - |
 
-### `/navigation`
-Navigation configuration and navigators.
-- Stack navigators
-- Tab navigators
-- Navigation types and helpers
+## Related Files
+- [CLAUDE.md](../../CLAUDE.md) - Development guidelines and architecture principles
+- [REPOSITORY_SUMMARY.md](../../REPOSITORY_SUMMARY.md) - Comprehensive repository documentation
 
-### `/services`
-Business logic and API integrations.
-- API client configuration
-- Data fetching services
-- Authentication services
-- Third-party integrations
+## Design Principles Applied
+- **Centralized configuration**: All constants in `src/constants/`
+- **Type safety**: Explicit TypeScript interfaces in `src/types/`
+- **Component organization**: Reusable components in `src/components/`
+- **Separation of concerns**: Services, types, hooks in dedicated folders
 
-### `/utils`
-Utility functions and helpers.
-- Date formatters
-- String helpers
-- Validation functions
-- Common utilities
-
-### `/constants`
-App-wide constants and configuration.
-- Colors
-- Typography
-- Spacing
-- API endpoints
-- App configuration
-
-### `/hooks`
-Custom React hooks.
-- Data fetching hooks
-- Form hooks
-- State management hooks
-
-### `/context`
-React Context providers for global state.
-- Auth context
-- Theme context
-- User preferences context
+## Implementation Notes
+- Barrel exports (`index.ts` files) for clean imports
+- Component types separated into `.types.ts` files
+- Constants organized by domain (map, colors, layout, API)
+- Services include both API fetching and data parsing logic
