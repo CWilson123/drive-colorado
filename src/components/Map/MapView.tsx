@@ -14,7 +14,8 @@ import {
   UserLocation,
   ShapeSource,
   LineLayer,
-  CircleLayer,
+  SymbolLayer,
+  Images,
   type CameraRef,
 } from '@maplibre/maplibre-react-native';
 import * as ExpoLocation from 'expo-location';
@@ -25,9 +26,10 @@ import {
   MIN_ZOOM,
   OPENFREEMAP_LIBERTY_STYLE_URL,
   CO_BLUE,
-  CO_GRAY,
   CO_RED,
   CO_GOLD,
+  LAYER_ICON_IMAGES,
+  MARKER_ICON_SIZE,
 } from '@/constants';
 import { LocationPermissionStatus } from './MapView.types';
 import type { MapViewProps, UserLocation as UserLocationData } from './MapView.types';
@@ -36,23 +38,8 @@ import type { MapMarkerData, DmsSign } from '@/types';
 /** Work zone overlay color (orange/amber) */
 const WORK_ZONE_COLOR = '#F59E0B';
 
-/** Marker circle radius on the map */
-const MARKER_CIRCLE_RADIUS = 10;
-
-/** Marker stroke width */
-const MARKER_STROKE_WIDTH = 2;
-
-/**
- * Color mapping for each marker layer type.
- * Used for CircleLayer data-driven styling.
- */
-const MARKER_COLORS: Record<string, string> = {
-  incidents: CO_RED,
-  weatherStations: CO_BLUE,
-  snowPlows: CO_GOLD,
-  plannedEvents: '#6366F1', // Indigo - distinct from weatherStations
-  dmsSigns: '#F59E0B', // Amber/Orange
-};
+/** Size for symbol icons (MapLibre uses 32px as base, so 48/32 = 1.5) */
+const SYMBOL_ICON_SIZE = MARKER_ICON_SIZE / 32;
 
 /**
  * Full-screen map component with user location tracking.
@@ -390,35 +377,43 @@ export const MapView: React.FC<MapViewProps> = ({
         />
       </ShapeSource>
 
-      {/* Render COtrip markers using native CircleLayer for smooth panning */}
+      {/* Render COtrip markers using PNG icons via SymbolLayer */}
       <ShapeSource id="markers" shape={markersGeoJSON} onPress={handleMarkerPress}>
-        <CircleLayer
-          id="marker-circles"
+        <SymbolLayer
+          id="marker-symbols"
           style={{
-            circleRadius: MARKER_CIRCLE_RADIUS,
-            circleColor: [
+            iconImage: [
               'match',
               ['get', 'layerType'],
               'incidents',
-              MARKER_COLORS.incidents,
+              'incidents',
               'weatherStations',
-              MARKER_COLORS.weatherStations,
+              'weatherStations',
               'snowPlows',
-              MARKER_COLORS.snowPlows,
+              'snowPlows',
               'plannedEvents',
-              MARKER_COLORS.plannedEvents,
+              'plannedEvents',
               'dmsSigns',
-              MARKER_COLORS.dmsSigns,
-              CO_BLUE, // default
+              'dmsSigns',
+              'incidents', // default
             ],
-            circleStrokeWidth: MARKER_STROKE_WIDTH,
-            circleStrokeColor: '#FFFFFF',
-            // Dim DMS signs that are off
-            circleOpacity: ['case', ['get', 'isDimmed'], 0.5, 1],
-            circleStrokeOpacity: ['case', ['get', 'isDimmed'], 0.5, 1],
+            iconSize: SYMBOL_ICON_SIZE,
+            iconAllowOverlap: true,
+            iconOpacity: ['case', ['get', 'isDimmed'], 0.5, 1],
           }}
         />
       </ShapeSource>
+
+      {/* Load icon images for use in SymbolLayer */}
+      <Images
+        images={{
+          incidents: LAYER_ICON_IMAGES.incidents,
+          weatherStations: LAYER_ICON_IMAGES.weatherStations,
+          snowPlows: LAYER_ICON_IMAGES.snowPlows,
+          plannedEvents: LAYER_ICON_IMAGES.plannedEvents,
+          dmsSigns: LAYER_ICON_IMAGES.dmsSigns,
+        }}
+      />
     </MLMapView>
   );
 };

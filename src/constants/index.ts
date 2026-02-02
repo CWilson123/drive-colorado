@@ -113,12 +113,18 @@ export {
   CACHE_TTL,
 } from './api';
 
+// Map marker icon configuration
+export {
+  LAYER_ICON_IMAGES,
+  MARKER_ICON_SIZE,
+  LAYER_ICON_SIZE_MD,
+  LAYER_ICON_SIZE_LG,
+} from './mapIcons';
+
 // Layer icon configuration
 export {
   LAYER_ICONS,
   LAYER_ICON_SIZE_SM,
-  LAYER_ICON_SIZE_MD,
-  LAYER_ICON_SIZE_LG,
   LayerIcon,
   getLayerIconConfig,
   type LayerKey,

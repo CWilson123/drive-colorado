@@ -296,9 +296,7 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
       >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: CO_RED + '15' }]}>
-          <View style={[styles.iconCircle, { backgroundColor: CO_RED }]}>
-            <LayerIcon layerKey="incidents" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
-          </View>
+          <LayerIcon layerKey="incidents" size={LAYER_ICON_SIZE_LG} style={{ marginRight: SPACING_MD }} />
           <View style={styles.headerText}>
             <Text style={styles.title}>{marker.title}</Text>
             {marker.subtitle && (
@@ -374,9 +372,7 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
       >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: CO_BLUE + '15' }]}>
-          <View style={[styles.iconCircle, { backgroundColor: CO_BLUE }]}>
-            <LayerIcon layerKey="weatherStations" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
-          </View>
+          <LayerIcon layerKey="weatherStations" size={LAYER_ICON_SIZE_LG} style={{ marginRight: SPACING_MD }} />
           <View style={styles.headerText}>
             <Text style={styles.title}>{marker.title}</Text>
             <Text style={styles.subtitle}>{station.properties.routeName}</Text>
@@ -444,9 +440,7 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
       >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: CO_GOLD + '15' }]}>
-          <View style={[styles.iconCircle, { backgroundColor: CO_GOLD }]}>
-            <LayerIcon layerKey="snowPlows" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
-          </View>
+          <LayerIcon layerKey="snowPlows" size={LAYER_ICON_SIZE_LG} style={{ marginRight: SPACING_MD }} />
           <View style={styles.headerText}>
             <Text style={styles.title}>CDOT Plow Unit</Text>
             <Text style={styles.subtitle}>{marker.title}</Text>
@@ -518,9 +512,7 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
       >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: CO_GOLD + '15' }]}>
-          <View style={[styles.iconCircle, { backgroundColor: CO_GOLD }]}>
-            <LayerIcon layerKey="roadConditions" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
-          </View>
+          <LayerIcon layerKey="roadConditions" size={LAYER_ICON_SIZE_LG} style={{ marginRight: SPACING_MD }} />
           <View style={styles.headerText}>
             <Text style={styles.title}>{overlay.routeName}</Text>
             <Text style={styles.subtitle}>Road Condition</Text>
@@ -602,9 +594,7 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
       >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: CO_BLUE + '15' }]}>
-          <View style={[styles.iconCircle, { backgroundColor: CO_BLUE }]}>
-            <LayerIcon layerKey="plannedEvents" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
-          </View>
+          <LayerIcon layerKey="plannedEvents" size={LAYER_ICON_SIZE_LG} style={{ marginRight: SPACING_MD }} />
           <View style={styles.headerText}>
             <Text style={styles.title}>{event.properties.name || 'Planned Event'}</Text>
             <Text style={styles.subtitle}>{event.properties.routeName}</Text>
@@ -688,9 +678,7 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
       >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: CO_GOLD + '15' }]}>
-          <View style={[styles.iconCircle, { backgroundColor: isOn ? CO_GOLD : CO_GRAY }]}>
-            <LayerIcon layerKey="dmsSigns" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
-          </View>
+          <LayerIcon layerKey="dmsSigns" size={LAYER_ICON_SIZE_LG} style={{ marginRight: SPACING_MD }} />
           <View style={styles.headerText}>
             <Text style={styles.title}>{sign.properties.publicName || sign.properties.name || 'DMS Sign'}</Text>
             <Text style={styles.subtitle}>{sign.properties.routeName} {sign.properties.direction}</Text>
@@ -759,9 +747,7 @@ export const MarkerDetailSheet: React.FC<MarkerDetailSheetProps> = ({
       >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: WORK_ZONE_COLOR + '15' }]}>
-          <View style={[styles.iconCircle, { backgroundColor: WORK_ZONE_COLOR }]}>
-            <LayerIcon layerKey="workZones" size={LAYER_ICON_SIZE_LG} color={CO_WHITE} />
-          </View>
+          <LayerIcon layerKey="workZones" size={LAYER_ICON_SIZE_LG} style={{ marginRight: SPACING_MD }} />
           <View style={styles.headerText}>
             <Text style={styles.title}>{coreDetails?.name || overlay.routeName || 'Work Zone'}</Text>
             <Text style={styles.subtitle}>Work Zone</Text>
@@ -918,14 +904,6 @@ const styles = StyleSheet.create({
     padding: SPACING_MD,
     borderRadius: BORDER_RADIUS_MD,
     marginBottom: SPACING_MD,
-  },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING_MD,
   },
   headerText: {
     flex: 1,

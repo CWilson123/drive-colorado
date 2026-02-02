@@ -34,7 +34,6 @@ import {
   FONT_WEIGHT_MEDIUM,
   Z_INDEX_DROPDOWN,
   LayerIcon,
-  getLayerIconConfig,
   LAYER_ICON_SIZE_SM,
 } from '@/constants';
 import type { LayerDropdownProps, MapLayer } from './LayerDropdown.types';
@@ -115,12 +114,9 @@ const LayerItem: React.FC<{
   layer: MapLayer;
   onToggle: () => void;
 }> = ({ layer, onToggle }) => {
-  const iconConfig = getLayerIconConfig(layer.id);
-  const backgroundColor = iconConfig?.backgroundColor ?? CO_GRAY_LIGHT;
-
   return (
     <View style={styles.layerItem}>
-      <View style={[styles.iconContainer, { backgroundColor }]}>
+      <View style={styles.iconContainer}>
         <LayerIcon layerKey={layer.id} size={LAYER_ICON_SIZE_SM} />
       </View>
       <Text style={styles.layerName}>{layer.name}</Text>
@@ -308,7 +304,6 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: ICON_SIZE,
     height: ICON_SIZE,
-    borderRadius: BORDER_RADIUS_MD,
     justifyContent: 'center',
     alignItems: 'center',
   },
