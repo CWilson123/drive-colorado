@@ -54,7 +54,7 @@ const SYMBOL_ICON_SIZE = MARKER_ICON_SIZE / 32;
  * @param props - Component props
  * @returns Rendered map view
  */
-export const MapView: React.FC<MapViewProps> = ({
+export const MapViewInner: React.FC<MapViewProps> = ({
   style,
   onMapReady,
   onMapError,
@@ -413,10 +413,12 @@ export const MapView: React.FC<MapViewProps> = ({
           plannedEvents: LAYER_ICON_IMAGES.plannedEvents,
           dmsSigns: LAYER_ICON_IMAGES.dmsSigns,
         }}
-      />
+       />
     </MLMapView>
   );
 };
+
+export const MapView = React.memo(MapViewInner);
 
 const styles = StyleSheet.create({
   map: {
