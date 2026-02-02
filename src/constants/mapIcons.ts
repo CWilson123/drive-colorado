@@ -15,7 +15,7 @@ import { LayerKey } from './layerIcons';
 export const LAYER_ICON_IMAGES: Record<LayerKey, any> = {
   roadConditions: require('@/assets/map-icons/road_conditions.png'),
   incidents: require('@/assets/map-icons/incident.png'),
-  weatherStations: require('@/assets/map-icons/weather_station.png'),
+  weatherStations: require('@/assets/map-icons/weather_station_alternate.png'),
   snowPlows: require('@/assets/map-icons/snow_plow.png'),
   plannedEvents: require('@/assets/map-icons/planned_event.png'),
   dmsSigns: require('@/assets/map-icons/dms.png'),
