@@ -149,13 +149,11 @@ export const LayerIcon: React.FC<LayerIconProps> = ({
     return null;
   }
 
-  return (
-    <Image
-      source={config.icon}
-      style={[{ width: size, height: size }, style]}
-      resizeMode="contain"
-    />
-  );
+  return React.createElement(Image, {
+    source: config.icon,
+    style: [{ width: size, height: size }, style],
+    resizeMode: 'contain',
+  });
 };
 
 /**
